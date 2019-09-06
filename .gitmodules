@@ -1,0 +1,3 @@
+[submodule "depends/python-libsnark"]
+	path = depends/python-libsnark
+	url = https://github.com/meilof/python-libsnark
