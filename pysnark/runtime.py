@@ -1,4 +1,6 @@
-import pysnark.libsnark
+import pysnark.uselibsnark
+
+backend=pysnark.uselibsnark
 
 class LinComb:
     def __init__(self, val, lc):
@@ -8,14 +10,8 @@ class LinComb:
     def __mul__(self, other):
         if isinstance(other, LinComb):
             retval = PubVal(self.val*other.val)
-            pb.add_r1cs_constraint(pysnark.libsnark.r1cs_constraint(self.lc, other.lc, retval.lc))
+            backend.add_constraint_unsafe(self.lc, other.lc, retval.lc)
             return retval
 
 def PubVal(val):
-    pbv=pysnark.libsnark.pb_variable()
-    pbv.allocate(pb)
-    pb.setval(pbv, val)
-    return LinComb(val, pysnark.libsnark.linear_combination(pbv))
-
-pb=pysnark.libsnark.protoboard()
-
+    return LinComb(val, backend.witness(val))
