@@ -26,6 +26,9 @@ def one():
 def fieldinverse(val):
     return pysnark.libsnark.fieldinverse(val)
 
+def get_modulus():
+    return pysnark.libsnark.get_modulus()
+
 def add_constraint(v, w, y):
     #global comphash
     
@@ -38,7 +41,6 @@ def add_constraint(v, w, y):
     #    needed?
     
     
-    
-    
+
     
     
