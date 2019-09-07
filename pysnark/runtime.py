@@ -54,7 +54,7 @@ class LinComb:
         self.value = value
         self.lc = lc   
     
-    def __str__(self):
+    def __repr__(self):
         return "{" + str(self.value) + "}"
     
     # self<other, so other-self>0, so other-self-1>=0
@@ -257,7 +257,7 @@ class LinComb:
         if (not ignore_errors) and (self.value<0 or self.value.bit_length()>bits):
             raise ValueError("value " + str(self.value) + " is not a " + str(bits) + "-bit positive integer")
             
-        bits = [PrivVal(self.value&(1<<ix)) for ix in range(bits)]
+        bits = [PrivVal((self.value&(1<<ix))>>ix) for ix in range(bits)]
         for bit in bits: bit.assert_bool_unsafe()
             
         (self-LinComb.from_bits(bits)).assert_zero()
@@ -278,12 +278,12 @@ class LinComb:
         ret = PrivVal(1 if self.value>=0 else 0)
         abs = self.value if self.value>=0 else -self.value
         
-        bits = [PrivVal(abs&(1<<ix)) for ix in range(bits)]
+        bits = [PrivVal((abs&(1<<ix))>>ix) for ix in range(bits)]
         for bit in bits: bit.assert_bool_unsafe()
             
-        # if ret==1, then requires that self+sum=2*self, so sum=self
-        # if ret==0, this requires that self*sum=0, so sum=-self
-        add_constraint(self+LinComb.from_bits(bits), 2*ret, self)
+        # if ret==1, then requires that 2*self=self+sum, so sum=self
+        # if ret==0, this requires that 0=self+sum, so sum=-self
+        add_constraint(2*ret, self, self+LinComb.from_bits(bits))
         
         return ret
             
