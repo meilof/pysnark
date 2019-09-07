@@ -7,6 +7,20 @@ from pysnark.runtime import snark, PrivVal, LinComb
 
 from pysnark.branching import if_then_else, guarded, _if, _ifelse, _elseif, _else, _while
 
+
+origgi = list.__getitem__
+
+def my_getitem(self, key):
+    print(key)
+    return origgi(self, key)
+
+list.__getitem__ = origgi
+
+lst=[2,3,4]
+print(lst[2])
+
+sys.exit(0)
+
 #print(PrivVal(31387)>>3)
 
 #x=PrivVal(10)

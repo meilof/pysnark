@@ -1,0 +1,14 @@
+# example binary circuit
+# https://homes.esat.kuleuven.be/~nsmart/MPC/old-circuits.html
+#
+# number of gates, number of wires
+2 4
+# number of inputs party 1, party 2, outputs
+1 1 1
+
+# gates: #input, #output, inputs, outputs, operation (XOR/AND/INV)
+# wires start numbering at zero
+# x2=xor(x0,x1)
+2 1 0 1 2 XOR
+# x3=and(x2,x1)
+2 1 2 1 3 AND
