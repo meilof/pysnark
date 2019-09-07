@@ -124,7 +124,7 @@ class LinComb:
     
     def __mul__(self, other):
         if isinstance(other, LinComb):
-            retval = PubVal(self.value*other.value)
+            retval = PrivVal(self.value*other.value)
             add_constraint_unsafe(self, other, retval)
             return retval
         elif is_base_value(other):
@@ -389,6 +389,10 @@ def snark(fn):
         return retcopy
         
     return snark__
+
+import atexit
+from .atexitmaybe import maybe
+atexit.register(maybe(backend.prove))
 
 #+def snark(fn):
 #+    def snark__(*args, **kwargs):
