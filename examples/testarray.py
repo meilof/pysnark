@@ -52,3 +52,4 @@ if __name__ == '__main__':
     arr[2,0] = 0
     print("matrix get el", arr, arr[PrivVal(1),PrivVal(1)])
     
+    

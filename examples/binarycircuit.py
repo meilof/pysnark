@@ -113,3 +113,5 @@ if __name__ == '__main__':
     outv = [wires[ngates+nin1+nin2-nout+i] for i in range(nout)]
     print("".join([str(o.value) for o in outv]))
     LinComb.from_bits(outv).val()
+
+    
