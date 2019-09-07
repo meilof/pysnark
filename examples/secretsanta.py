@@ -89,10 +89,3 @@ print(ppout.unpack(PackIntMod(1<<ppout.bitlen()).pack(val),0))
 
 print(ret, found, [if_then_else(found,ret2i,0) for ret2i in ret2])
 
-import pysnark.libsnark
-import pysnark.uselibsnark
-
-print("#vars", pysnark.uselibsnark.pb.num_variables())
-print("#constraints", pysnark.uselibsnark.pb.num_constraints())
-print("sat", pysnark.uselibsnark.pb.is_satisfied())
-print(pysnark.libsnark.r1cs_ppzksnark_generator(pysnark.uselibsnark.pb.get_constraint_system()))
