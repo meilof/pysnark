@@ -1,0 +1,27 @@
+* energy saving branches
+   - bits: use 0
+   - use guard as ONE
+   - check for other computations
+     (could be beneficial to have safe instead of unsafe, document this
+     possibility: user can itself initially set stuff to zero)
+* bounds
+   - Var(bound=...) -> check and put bound in verification key file
+   - verbose option: per computed variable, print computed bounds
+     (__file__:__line: "x" has bound [0,20])
+   - need to override base type (for bounds) and probably also backend?
+* libsnark: split readinga and writing:
+   - bool try_read(cs=NULL) -> read and check against cs if given, return true
+     if still the same
+   - void generate()
+   - void write()
+* secret santa:
+   - amazon lambda, snarkjs
+   - assert hashes unequal to each other
+* put @snark in separate module
+* make inhibit_profiling configurable
+* multiple backends: use libsnark if no backend imported and if available, if
+  need subqap then will import libqap
+* do sudoku example
+* rename / operator because it's too dangerous
+* make ggh hashing more transparent: one function, conditonal % inside
+* check where .value is used: can we avoid all use outside of runtime?
