@@ -4,3 +4,5 @@ dist/*
 PySNARK.egg-info/*
 *.pyc
 diffs
+build.sh
+depends/qaptools/build/

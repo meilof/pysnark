@@ -1,3 +1,6 @@
+* libsnark ../xbyak, ../ate-pairing laten gebruiken? libqap met cmake?
+    http://mingw-w64.org/doku.php/download
+* windows build environment under mac os?
 * energy saving branches
    - bits: use 0
    - use guard as ONE
