@@ -1,9 +1,14 @@
 # Copytight (C) Meilof Veeningen, 2019
 
-import pysnark.uselibsnark
+import sys
 
-
-backend=pysnark.uselibsnark
+if "pysnark.uselibqap" in sys.modules:
+    print("Using libqap")
+    backend=sys.modules["pysnark.uselibqap"]
+else:
+    print("Using libsnark")
+    import pysnark.uselibsnark
+    backend=pysnark.uselibsnark
 
 """
 Operating principles:

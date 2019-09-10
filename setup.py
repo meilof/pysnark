@@ -34,27 +34,30 @@ class CMakeBuild(build_ext):
 
         for ext in self.extensions:
             extdir = os.path.abspath(os.path.dirname(self.get_ext_fullpath(ext.name)))
+            
+            tempdir = self.build_temp+"/"+ext.name
 
             cmake_args = [
                 '-DCMAKE_LIBRARY_OUTPUT_DIRECTORY={}'.format(extdir),
+                '-DCMAKE_RUNTIME_OUTPUT_DIRECTORY={}'.format(extdir),
                 '-DCMAKE_SWIG_OUTDIR={}'.format(extdir),
-                '-DSWIG_OUTFILE_DIR={}'.format(self.build_temp),
-                '-DCMAKE_ARCHIVE_OUTPUT_DIRECTORY={}'.format(self.build_temp),
+                '-DSWIG_OUTFILE_DIR={}'.format(tempdir),
+                '-DCMAKE_ARCHIVE_OUTPUT_DIRECTORY={}'.format(tempdir),
                 '-DPYTHON_EXECUTABLE={}'.format(sys.executable)                
             ]
 
             cmake_args += cmake_cmd_args
 
-            if not os.path.exists(self.build_temp):
-                os.makedirs(self.build_temp)
-
+            if not os.path.exists(tempdir):
+                os.makedirs(tempdir)
+                
             # Config
             subprocess.check_call(['cmake', ext.cmake_lists_dir] + cmake_args,
-                                  cwd=self.build_temp)
+                                  cwd=tempdir)
 
             # Build
             subprocess.check_call(['cmake', '--build', '.'],
-                                  cwd=self.build_temp)
+                                  cwd=tempdir)
 
 setup(name='PySNARK',
       version='0.2',
@@ -62,7 +65,9 @@ setup(name='PySNARK',
       author='Meilof Veeningen',
       author_email='meilof@gmail.com',
       url='https://github.com/meilof/pysnark',
-      packages=['pysnark'],
-      ext_modules=[CMakeExtension("pysnark.libsnark", cmake_lists_dir="depends/python-libsnark")],
+      packages=['pysnark', 'pysnark.qaptools'],
+      ext_modules=[CMakeExtension("pysnark.libsnark", cmake_lists_dir="depends/python-libsnark"),
+                   CMakeExtension("pysnark.qaptools.all", cmake_lists_dir="depends/qaptools")
+                  ],
       cmdclass={'build_ext': CMakeBuild})
 
