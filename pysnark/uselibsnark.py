@@ -45,12 +45,16 @@ def prove():
     pubvals=pb.primary_input_pubs();
     privvals=pb.auxiliary_input_pubs();
     
-    print("sat", pb.is_satisfied())
-    #print(pysnark.libsnark.r1cs_ppzksnark_generator(cs))
-    keypair=pysnark.libsnark.read_key_or_generate(cs, "pysnark_ek", "pysnark_vk")
+    print("*** Trying to read pysnark_ek")
+    keypair=pysnark.libsnark.read_key("pysnark_ek", cs)
+    if not keypair:
+        print("*** No pysnark_key or computation changed, generating keys...")
+        keypair=pysnark.libsnark.r1cs_ppzksnark_generator(cs)
+        pysnark.libsnark.write_keys(keypair, "pysnark_vk", "pysnark_ek")
     
     print("*** PySNARK: generating proof pysnark_log (" +
-          "#io=" + str(pubvals.size()) + 
+          "sat=" + str(pb.is_satisfied()) + 
+          ", #io=" + str(pubvals.size()) + 
           ", #witness=" + str(privvals.size()) + 
           ", #constraint=" + str(pb.num_constraints()) +
            ")")

@@ -6,5 +6,5 @@ PySNARK.egg-info/*
 diffs
 build.sh
 depends/qaptools/build/
-examples/pysnark_ek
 examples/pysnark_vk
+examples/pysnark_ek
