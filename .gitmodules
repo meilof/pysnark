@@ -1,9 +1,3 @@
 [submodule "depends/python-libsnark"]
 	path = depends/python-libsnark
 	url = https://github.com/meilof/python-libsnark
-[submodule "depends/qaptools/depends/ate-pairing"]
-	path = depends/qaptools/depends/ate-pairing
-	url = https://github.com/herumi/ate-pairing
-[submodule "depends/qaptools/depends/xbyak"]
-	path = depends/qaptools/depends/xbyak
-	url = https://github.com/herumi/xbyak
