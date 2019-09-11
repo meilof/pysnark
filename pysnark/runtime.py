@@ -2,11 +2,11 @@
 
 import sys
 
-if "pysnark.uselibqap" in sys.modules:
-    print("Using libqap")
-    backend=sys.modules["pysnark.uselibqap"]
+if "pysnark.useqaptools" in sys.modules:
+    backend=sys.modules["pysnark.useqaptools"]
+elif "pysnark.usenone" in sys.modules:
+    backend=sys.modules["pysnark.usenone"]
 else:
-    print("Using libsnark")
     import pysnark.uselibsnark
     backend=pysnark.uselibsnark
 
@@ -161,7 +161,7 @@ class LinComb:
     def __mod__(self, other):
         if other&(other-1)==0:
             # this is faster for powers of two
-            return LinComb.from_bits(self.to_bits()[:other.bit_length()])
+            return LinComb.from_bits(self.to_bits()[:other.bit_length()-1])
         
         return self.__divmod__(other)[1]
         

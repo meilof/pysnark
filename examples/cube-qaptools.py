@@ -2,7 +2,8 @@
 
 import sys
 
-import pysnark.useqaptools
+import pysnark.usenone
+#import pysnark.useqaptools
 from pysnark.runtime import snark, PrivVal
 
 @snark
