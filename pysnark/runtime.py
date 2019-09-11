@@ -6,9 +6,21 @@ if "pysnark.useqaptools" in sys.modules:
     backend=sys.modules["pysnark.useqaptools"]
 elif "pysnark.usenone" in sys.modules:
     backend=sys.modules["pysnark.usenone"]
+elif "pysnark.uselibsnark" in sys.modules:
+    backend=sys.modules["pysnark.uselibsnark"]
 else:
-    import pysnark.uselibsnark
-    backend=pysnark.uselibsnark
+    try:
+        import pysnark.uselibsnark
+        backend=pysnark.uselibsnark
+    except:
+        try:
+            import pysnark.useqaptools
+            backend=pysnark.useqaptools
+        except:
+            import pysnark.usenone
+            backend=pysnark.usenone
+            print("*** Neither libsnark nor qaptools seems to work, not using any backend", file=sys.stderr)
+            
 
 """
 Operating principles:
