@@ -1,3 +1,6 @@
 [submodule "depends/python-libsnark"]
 	path = depends/python-libsnark
 	url = https://github.com/meilof/python-libsnark
+[submodule "depends/qaptools"]
+	path = depends/qaptools
+	url = https://github.com/Charterhouse/qaptools.git
