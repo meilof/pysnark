@@ -85,6 +85,7 @@ def gencomm(blocknm, vals, rnd=None):
     """
 
     writecomm(blocknm, vals, rnd)
+    runqapgen.ensure_mkey(-1, len(vals))
     run(blocknm)
 
 

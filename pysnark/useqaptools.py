@@ -47,26 +47,29 @@ import pysnark.qaptools.runqapprove
 import pysnark.qaptools.runqapver
 import pysnark.qaptools.schedule
 
-class LinComb:
-    def __init__(self, sig):
-        self.sig = sig
-        
-    def __str__(self):
-        """ Return string representation of linear combination represented by this VcShare. """
-        return " ".join(map(lambda cv: str(cv[0])+" "+cv[1], self.sig))
+random = rndom.SystemRandom()
+
+vc_ctx = None
+vc_ctr = dict()
+vc_ioctr = dict()
+
+qape = None                # qap equation file (only for key generation)
+qapv = None                # qap wire value file
+qapvo = None
+
+def init():
+    global qape, qapv, qapvo
+
+    qapv = open(options.get_wire_file(), "w")
+    print("# PySNARK wire values ", file=qapv)
+
+    qapvo = open(options.get_io_file(), "w")
+    print("# PySNARK i/o", file=qapvo)
+
+    qape = open(options.get_eqs_file(), "w")
+    print("# PySNARK equations", file=qape)
     
-    def __add__(self, other):
-        return LinComb(self.sig + other.sig)
-    
-    def __sub__(self, other):
-        return self + (-other)
-    
-    def __mul__(self, other):
-        return LinComb([(c * other % vc_p, v) for (c, v) in self.sig])
-    
-    def __neg__(self):
-        return LinComb([(-c % vc_p, v) for (c, v) in self.sig])
-    
+    import pysnark.runtime
 
 def inited(fn):
     def inited_(*args, **kwargs):
@@ -77,12 +80,33 @@ def inited(fn):
 
     return inited_
 
+
+class Sig:
+    def __init__(self, sig):
+        self.sig = sig
+        
+    def __str__(self):
+        """ Return string representation of linear combination represented by this VcShare. """
+        return " ".join(map(lambda cv: str(cv[0])+" "+cv[1], self.sig))
+    
+    def __add__(self, other):
+        return Sig(self.sig + other.sig)
+    
+    def __sub__(self, other):
+        return self + (-other)
+    
+    def __mul__(self, other):
+        return Sig([(c * other % vc_p, v) for (c, v) in self.sig])
+    
+    def __neg__(self):
+        return Sig([(-c % vc_p, v) for (c, v) in self.sig])
+
 @inited
 def privval(val):
     vc_ctr[vc_ctx] += 1
     sid = vc_ctx + "/" + str(vc_ctr[vc_ctx])
     printwire(val, sid)
-    return LinComb([(1,sid)])
+    return Sig([(1,sid)])
 
 @inited
 def pubval(val):
@@ -97,15 +121,14 @@ def pubval(val):
     print("*", "= 1", sid, "-1", sido, file=qape)
     qape.flush()
     
-    return LinComb([(1,sid)])
+    return Sig([(1,sid)])
 
-@inited
 def zero():
-    return LinComb([])
+    return Sig([])
     
 @inited
 def one():
-    return LinComb([(1, vc_ctx+"/onex")])
+    return Sig([(1, vc_ctx+"/onex")])
 
 def fieldinverse(val):
     return int(invert(val, vc_p))
@@ -162,29 +185,6 @@ def prove():
     #print >>sys.stderr, "  key material + proof material:"
     #print >>sys.stderr, " ", options.get_mpkey_file(), vks,\
     #                    options.get_schedule_file(), , bcs
-    
-
-random = rndom.SystemRandom()
-
-qape = None                # qap equation file (only for key generation)
-qapv = None                # qap wire value file
-qapvo = None
-
-vc_ctx = None
-vc_ctr = dict()
-vc_ioctr = dict()
-
-def init():
-    global qape, qapv, qapvo
-
-    qapv = open(options.get_wire_file(), "w")
-    print("# PySNARK wire values ", file=qapv)
-
-    qapvo = open(options.get_io_file(), "w")
-    print("# PySNARK i/o", file=qapvo)
-
-    qape = open(options.get_eqs_file(), "w")
-    print("# PySNARK equations", file=qape)
 
 @inited
 def printwire(sh, nm):
@@ -258,14 +258,21 @@ def for_each_in(cls, f, struct):
 @inited
 def vc_declare_block(bn, vcs, rnd1=None):
     global vc_ctx, vc_ctr
+    
+    def ensure_single(x):
+        if len(x.lc.sig)==1: return x
+            
+        ret = pysnark.runtime.PrivVal(x.value)
+        ret.assert_eq(x)
+        return ret
 
-    vcs = [x.ensure_single() for x in vcs]
+    vcs = [ensure_single(x) for x in vcs]
     if rnd1 is None: rnd1 = random.randint(0, vc_p-1)
     printwire(rnd1, vc_ctx+"/rnd1_"+bn)
     printwire(random.randint(0, vc_p-1), vc_ctx+"/rnd2_"+bn)
 
     if qape is not None:
-        print("[ioblock]", vc_ctx, bn, " ".join([x.sig[0][1] for x in vcs]), file=qape)
+        print("[ioblock]", vc_ctx, bn, " ".join([x.lc.sig[0][1] for x in vcs]), file=qape)
         qape.flush()
 
     return vcs
@@ -281,7 +288,7 @@ def importcomm(bn, nm=None):
     if not os.path.isfile(fl):
         raise IOError("Wire file " + fl + " for imported block \"" + bn + "\" does not exist")
     vals = [int(ln.strip()) for ln in open(fl)]
-    vvals = vc_declare_block(nm, [Var(val,True) for val in vals[:-1]], vals[-1])
+    vvals = vc_declare_block(nm, [pysnark.runtime.PrivVal(val) for val in vals[:-1]], vals[-1])
 
     if qape is not None:
         print("[external]", vc_ctx, nm, bn, file=qape)
@@ -296,16 +303,16 @@ def exportcomm(vals, bn, nm=None):
         nm = str(vc_ctr[vc_ctx])
         vc_ctr[vc_ctx] += 1
 
-    valsp = [val if isinstance(val, Var) else Var(val,True) for val in vals]
+    valsp = [val if isinstance(val, pysnark.runtime.LinComb) else pysnark.runtime.PrivVal(val) for val in vals]
 
     rnd = random.randint(0,vc_p-1)
     vc_declare_block(nm, valsp, rnd)
-
+    
     pysnark.qaptools.runqapinput.writecomm(bn, [val.value for val in valsp], rnd)
     pysnark.qaptools.runqapgen.ensure_mkey(-1, len(vals))
     pysnark.qaptools.runqapinput.run(bn)
 
-    if qape != None:
+    if qape is not None:
         print("[external]", vc_ctx, nm, bn, file=qape)
         qape.flush()
 
@@ -351,19 +358,19 @@ def subqap(nm):
             argret = []
 
             def copyandadd(el):
-                ret = Var(el.value, True)
+                ret = pysnark.runtime.PrivVal(el.value)
                 argret.append((el, ret))
                 return ret
 
             def copyandaddrev(el):
-                ret = Var(el.value, True)
+                ret = pysnark.runtime.PrivVal(el.value)
                 argret.append((ret, el))
                 return ret
 
-            argscopy = for_each_in(Var, copyandadd, args)
+            argscopy = for_each_in(pysnark.runtime.LinComb, copyandadd, args)
             ret = fn(*argscopy, **kwargs)
             continuefn(oldctx)
-            retcopy = for_each_in(Var, copyandaddrev, ret)
+            retcopy = for_each_in(pysnark.runtime.LinComb, copyandaddrev, ret)
 
             vc_glue(oldctx, newctx, argret)
 

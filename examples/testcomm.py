@@ -29,6 +29,8 @@
 from pysnark.useqaptools import importcomm, exportcomm, subqap
 from pysnark.qaptools.runqapinput import gencomm
 
+from pysnark.runtime import PrivVal
+
 @subqap("square")
 def square(val):
     return val*val
@@ -39,4 +41,7 @@ def cube(val):
 
 gencomm("test", [1,2])
 vals = importcomm("test")
-exportcomm([cube(vals[0]) * square(vals[1])], "out")
+ret=vals[0]*vals[0]
+exportcomm([PrivVal(0)], "out")
+#exportcomm([cube(vals[0]) * square(vals[1])], "out")
+print("Finished")

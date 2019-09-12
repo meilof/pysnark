@@ -116,14 +116,13 @@ def qapsplit():
             print(".")
 
     def maxperqap(nm):
-        print("nm", nm, blocks[nm])
         try:
             return max([len(blk[1]) for blk in blocks[nm] if (nm,blk[0]) in extblocks])
         except ValueError:
-            return None
+            return 0
 
     def ioperqap(nm):
-        print("ioperqap for ", nm, blocks[nm])
+        #print("ioperqap for ", nm, blocks[nm])
         try:
             return sum([len(blk[1]) for blk in blocks[nm] if (nm, blk[0]) in extblocks])
         except ValueError:
