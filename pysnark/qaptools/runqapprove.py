@@ -29,7 +29,7 @@
 import subprocess
 import sys
 
-import pysnark.options as psopt
+import pysnark.qaptools.options as psopt
 
 def run():
     """

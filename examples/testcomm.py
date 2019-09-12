@@ -26,34 +26,17 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-import subprocess
-import sys
+from pysnark.useqaptools import importcomm, exportcomm, subqap
+from pysnark.qaptools.runqapinput import gencomm
 
-import pysnark.qaptools.options as psopt
+@subqap("square")
+def square(val):
+    return val*val
 
-def getcommand():
-    """
-    Returns the command line to the qapver tool
+@subqap("cube")
+def cube(val):
+    return square(val)*val
 
-    :return: Command line
-    """
-    vercom = [psopt.get_qaptool_exe("qapver"), psopt.get_mpkey_file(), psopt.get_schedule_file(),
-              psopt.get_proof_file(), psopt.get_io_file()]
-    return " ".join(vercom)
-
-
-def run():
-    """
-    Run the qapver tool to verify a computation proof
-
-    :return: The command line to the "qapver" tool
-    """
-    vercom = [psopt.get_qaptool_exe("qapver"), psopt.get_mpkey_file(), psopt.get_schedule_file(),
-              psopt.get_proof_file(), psopt.get_io_file()]
-    if subprocess.call(vercom) != 0:
-        sys.exit(2)
-
-    return " ".join(vercom)
-
-if __name__ == "__main__":
-    run()
+gencomm("test", [1,2])
+vals = importcomm("test")
+exportcomm([cube(vals[0]) * square(vals[1])], "out")

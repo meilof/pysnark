@@ -30,432 +30,355 @@
 
 # Copyright (C) Meilof Veeningen, 2019
 
-def privval(val):
-    pass
-#    pbv=pysnark.libsnark.pb_variable()
-#    pbv.allocate(pb)
-#    pb.setval(pbv, val)
-#    return pysnark.libsnark.linear_combination(pbv)
+from   gmpy2 import invert
+import os
+import os.path
+import random as rndom
+import subprocess
+import sys
 
-def pubval(val):
-    pass
-#    pbv=pysnark.libsnark.pb_variable()
-#    pbv.allocate(pb)
-#    pb.setpublic(pbv)
-#    pb.setval(pbv, val)
-#    return pysnark.libsnark.linear_combination(pbv)
+from .qaptools import options
+from .qaptools.options import vc_p
+import pysnark.qaptools.qapsplit
+import pysnark.qaptools.runqapgen
+import pysnark.qaptools.runqapinput
+import pysnark.qaptools.runqapgenf
+import pysnark.qaptools.runqapprove
+import pysnark.qaptools.runqapver
+import pysnark.qaptools.schedule
 
-def zero():
-    pass
-#    return pysnark.libsnark.linear_combination()
+class LinComb:
+    def __init__(self, sig):
+        self.sig = sig
+        
+    def __str__(self):
+        """ Return string representation of linear combination represented by this VcShare. """
+        return " ".join(map(lambda cv: str(cv[0])+" "+cv[1], self.sig))
     
+    def __add__(self, other):
+        return LinComb(self.sig + other.sig)
+    
+    def __sub__(self, other):
+        return self + (-other)
+    
+    def __mul__(self, other):
+        return LinComb([(c * other % vc_p, v) for (c, v) in self.sig])
+    
+    def __neg__(self):
+        return LinComb([(-c % vc_p, v) for (c, v) in self.sig])
+    
+
+def inited(fn):
+    def inited_(*args, **kwargs):
+        if vc_ctx is None:
+            init()
+            enterfn("main", "main")
+        return fn(*args, **kwargs)
+
+    return inited_
+
+@inited
+def privval(val):
+    vc_ctr[vc_ctx] += 1
+    sid = vc_ctx + "/" + str(vc_ctr[vc_ctx])
+    printwire(val, sid)
+    return LinComb([(1,sid)])
+
+@inited
+def pubval(val):
+    vc_ctr[vc_ctx] += 1
+    sid = vc_ctx + "/" + str(vc_ctr[vc_ctx])
+    printwire(val, sid)
+
+    vc_ioctr[vc_ctx] += 1
+    sido = vc_ctx + "/o_" + str(vc_ioctr[vc_ctx])
+    printwireout(val, sido)
+
+    print("*", "= 1", sid, "-1", sido, file=qape)
+    qape.flush()
+    
+    return LinComb([(1,sid)])
+
+@inited
+def zero():
+    return LinComb([])
+    
+@inited
 def one():
-    pass
-#    return pysnark.libsnark.linear_combination(1)
+    return LinComb([(1, vc_ctx+"/onex")])
 
 def fieldinverse(val):
-    pass
-#    return pysnark.libsnark.fieldinverse(val)
+    return int(invert(val, vc_p))
 
 def get_modulus():
-    pass
-#    return pysnark.libsnark.get_modulus()
+    return vc_p
 
+@inited
 def add_constraint(v, w, y):
-    pass
-#    #global comphash
-#    
-#    pb.add_r1cs_constraint(pysnark.libsnark.r1cs_constraint(v,w,y))
-#    
-#    #TODO: check, add to hash
-#    #comphash = hash((comphash,tuple(v.sig),tuple(w.sig),tuple(y.sig)))
-#    #if not libsnark.check_mul(v.value, w.value, y.value):
-#    #    raise ValueError()
-#    #    needed?
+    print(v, "*", w, "=", y, ".", file=qape)    
     
+@inited
 def prove():
-    pass
-#    cs=pb.get_constraint_system_pubs()
-#    pubvals=pb.primary_input_pubs();
-#    privvals=pb.auxiliary_input_pubs();
-#    
-#    print("sat", pb.is_satisfied())
-#    #print(pysnark.libsnark.r1cs_ppzksnark_generator(cs))
-#    keypair=pysnark.libsnark.read_key_or_generate(cs, "pysnark_ek", "pysnark_vk")
-#    
-#    print("*** PySNARK: generating proof pysnark_log (" +
-#          "#io=" + str(pubvals.size()) + 
-#          ", #witness=" + str(privvals.size()) + 
-#          ", #constraint=" + str(pb.num_constraints()) +
-#           ")")
-#    
-#    proof=pysnark.libsnark.r1cs_ppzksnark_prover(keypair.pk, pubvals, privvals);
-#    verified=pysnark.libsnark.r1cs_ppzksnark_verifier_strong_IC(keypair.vk, pubvals, proof);
-#    
-#    print("*** Public inputs: " + " ".join([str(pubvals.at(i)) for i in range(pubvals.size())]))
-#
-#    #cerr << "*** Public inputs:";
-#    #for (auto &v: pubvals) cerr << " " << v;
-#    #cerr << endl;
-#    print("*** Verification status:", verified)
+    qaplens,blklen,extlen,sigs = pysnark.qaptools.qapsplit.qapsplit()
     
+    #print("qaplens", qaplens, "blklen", blklen, "extlen", extlen, "sigs", sigs)
+    if extlen is None: extlen = 0
+    if blklen is None: blklen = 0
+    
+    sz = 1<<((max([max(qaplens.values()),blklen,extlen])-1).bit_length())
+    pubsz = 1<<((extlen-1).bit_length()) if extlen is not None else 0
+    print("qaplen:", max(qaplens.values()), "blklen:", blklen, "extlen:", extlen, "sz", sz, "pubsz", pubsz)
+
+    cursz, curpubsz = pysnark.qaptools.runqapgen.ensure_mkey(sz, pubsz)
+
+    for nm in list(sigs.keys()):
+        pysnark.qaptools.runqapgenf.ensure_ek(nm, sigs[nm], 1<<((qaplens[nm]-1).bit_length()))
+
+    pysnark.qaptools.runqapprove.run()
+
+    allfs = list(pysnark.qaptools.schedule.oftype("function"))
+    (eqs,eks,vks) = list(map(set,list(zip(*[(fn[1], fn[2], fn[3]) for fn in allfs])))) if allfs!=[] else (set(),set(), set())
+    alles = list(pysnark.qaptools.schedule.oftype("external"))
+    (wrs,cms) = list(map(set,list(zip(*[(fn[2], fn[3]) for fn in alles])))) if alles!=[] else (set(),set())
+
+    if os.path.isfile(options.get_mpkey_file()) and all([os.path.isfile(vk) for vk in vks]):
+        vercom = pysnark.qaptools.runqapver.run()
+        print("Verification succeeded", file=sys.stderr)
+    else:
+        vercom = pysnark.qaptools.runqapver.getcommand()
+        print("Verification keys missing, skipping verification", file=sys.stderr)
+
+    print("  prover keys/eqs: ", options.get_mkey_file(), " ".join(eks), " ".join(eqs), pysnark.qaptools.options.get_schedule_file(), file=sys.stderr)
+    print("  prover data:     ", " ".join(wrs), file=sys.stderr)
+    print("  verifier keys:   ", options.get_mpkey_file(), " ".join(vks), pysnark.qaptools.options.get_schedule_file(), file=sys.stderr)
+    print("  verifier data:   ", " ".join(cms), options.get_proof_file(), pysnark.qaptools.options.get_io_file(), file=sys.stderr)
+    print("  verifier cmd:    ", vercom, file=sys.stderr)
+    if cursz>sz or curpubsz>pubsz:
+        print("** Evaluation/public keys larger than needed for function: " +\
+                            str(cursz)+">"+str(sz) + " or " + str(curpubsz)+">"+str(pubsz)+ ".", file=sys.stderr)
+        print("** To re-create, remove " + options.get_mkey_file() + " and " +\
+                            options.get_mpkey_file() + " and run again.", file=sys.stderr)
+
+    #print >>sys.stderr, "  key material + proof material:"
+    #print >>sys.stderr, " ", options.get_mpkey_file(), vks,\
+    #                    options.get_schedule_file(), , bcs
     
 
-#import os
-#import os.path
-#import subprocess
-#import sys
-#
-#import options
-#import qapsplit
-#import qaptools.runqapgen
-#import qaptools.runqapgenf
-#import qaptools.runqapinput
-#import qaptools.runqapprove
-#import qaptools.runqapver
-#import schedule
-#from atexitmaybe import maybe
+random = rndom.SystemRandom()
+
+qape = None                # qap equation file (only for key generation)
+qapv = None                # qap wire value file
+qapvo = None
+
+vc_ctx = None
+vc_ctr = dict()
+vc_ioctr = dict()
+
+def init():
+    global qape, qapv, qapvo
+
+    qapv = open(options.get_wire_file(), "w")
+    print("# PySNARK wire values ", file=qapv)
+
+    qapvo = open(options.get_io_file(), "w")
+    print("# PySNARK i/o", file=qapvo)
+
+    qape = open(options.get_eqs_file(), "w")
+    print("# PySNARK equations", file=qape)
+
+@inited
+def printwire(sh, nm):
+    if qapv is not None:
+        print(nm+":", sh, file=qapv)
+        qapv.flush()
+
+@inited
+def printwireout(sh, nm):
+    if qapvo is not None:
+        print(nm+":", sh, file=qapvo)
+        qapvo.flush()
+
+def enterfn(fname, call=None):
+    """
+    Start a new call of the given function type
+    :param fname: Function name. All instances of the same function should execute the exact same sequence of instructions
+    :param call: Call name. Should be globally unique (autogenerated if not given)
+    :return: Call name
+    """
+
+    global vc_ctx, vc_ctr, vc_ioctr
+
+    if vc_ctx is None: init()
+
+    if call is None:
+        call=(vc_ctx+"_"+str(vc_ctr[vc_ctx])+"_" if vc_ctx is not None else "") + fname
+
+    if qape!=None: print("[function]", fname, call, file=qape)
+    
+    vc_ctx = call
+    vc_ctr[vc_ctx] = 0
+    vc_ioctr[vc_ctx] = 0
+
+    printwire(random.randint(0, vc_p-1), call+"/deltav") 
+    printwire(random.randint(0, vc_p-1), call+"/deltaw")
+    printwire(random.randint(0, vc_p-1), call+"/deltay")
+
+    printwire(1, call + "/onex")
+    if qape!=None:
+        print("* = 1 " + call + "/one -1 " + call + "/onex", file=qape)
+
+    return call
+
+
+@inited
+def continuefn(call):
+    """
+    Continue execution of the given function call
+    :param call: Function call
+    :return: None
+    """
+    global vc_ctx, vc_ctr
+    vc_ctx = call
+    vc_ctr[vc_ctx] += 1
+
+
+def for_each_in(cls, f, struct):
+    """ Recursively traversing all lists and tuples in struct, apply f to each
+        element that is an instance of cls. Returns structure with f applied. """
+    if isinstance(struct, list):
+        return [for_each_in(cls, f, x) for x in struct]
+    elif isinstance(struct, tuple):
+        return tuple([for_each_in(cls, f, x) for x in struct])
+    else:
+        if isinstance(struct, cls):
+            return f(struct)
+        else:
+            return struct
+
+@inited
+def vc_declare_block(bn, vcs, rnd1=None):
+    global vc_ctx, vc_ctr
+
+    vcs = [x.ensure_single() for x in vcs]
+    if rnd1 is None: rnd1 = random.randint(0, vc_p-1)
+    printwire(rnd1, vc_ctx+"/rnd1_"+bn)
+    printwire(random.randint(0, vc_p-1), vc_ctx+"/rnd2_"+bn)
+
+    if qape is not None:
+        print("[ioblock]", vc_ctx, bn, " ".join([x.sig[0][1] for x in vcs]), file=qape)
+        qape.flush()
+
+    return vcs
+
+@inited
+def importcomm(bn, nm=None):
+    global vc_ctr, vc_ctx
+    if nm is None:
+        nm = str(vc_ctr[vc_ctx])
+        vc_ctr[vc_ctx] += 1
+
+    fl = options.get_block_file(bn)
+    if not os.path.isfile(fl):
+        raise IOError("Wire file " + fl + " for imported block \"" + bn + "\" does not exist")
+    vals = [int(ln.strip()) for ln in open(fl)]
+    vvals = vc_declare_block(nm, [Var(val,True) for val in vals[:-1]], vals[-1])
+
+    if qape is not None:
+        print("[external]", vc_ctx, nm, bn, file=qape)
+        qape.flush()
+
+    return vvals
+
+@inited
+def exportcomm(vals, bn, nm=None):
+    global vc_ctr, vc_ctx
+    if nm is None:
+        nm = str(vc_ctr[vc_ctx])
+        vc_ctr[vc_ctx] += 1
+
+    valsp = [val if isinstance(val, Var) else Var(val,True) for val in vals]
+
+    rnd = random.randint(0,vc_p-1)
+    vc_declare_block(nm, valsp, rnd)
+
+    pysnark.qaptools.runqapinput.writecomm(bn, [val.value for val in valsp], rnd)
+    pysnark.qaptools.runqapgen.ensure_mkey(-1, len(vals))
+    pysnark.qaptools.runqapinput.run(bn)
+
+    if qape != None:
+        print("[external]", vc_ctx, nm, bn, file=qape)
+        qape.flush()
+
+    return valsp
+
+
+def vc_glue(ctx1, ctx2, vals):
+    global vc_ctx, vc_ctr
+
+    bakctx = vc_ctx
+
+    rndv = random.randint(0, vc_p - 1)
+
+    vc_ctx = ctx1
+    bn1 = str(vc_ctr[vc_ctx])
+    vc_ctr[vc_ctx] += 1
+    vc_declare_block(bn1, [x[0] for x in vals], rndv)
+
+    vc_ctx = ctx2
+    bn2 = str(vc_ctr[vc_ctx])
+    vc_ctr[vc_ctx] += 1
+    vc_declare_block(bn2, [x[1] for x in vals], rndv)
+
+    vc_ctx = bakctx
+
+    if qape!=None:
+        print("[glue]", ctx1, bn1, ctx2, bn2, file=qape)
+        qape.flush()
+
+
+def subqap(nm):
+    def subqap_(fn):
+        @inited
+        def subqap__(*args, **kwargs):
+            global vc_ctx
+
+            if kwargs: raise ValueError("@subqap-decorated functions cannot have keyword arguments")
+
+            oldctx = vc_ctx
+            call = enterfn(nm)
+            newctx = vc_ctx
+
+            argret = []
+
+            def copyandadd(el):
+                ret = Var(el.value, True)
+                argret.append((el, ret))
+                return ret
+
+            def copyandaddrev(el):
+                ret = Var(el.value, True)
+                argret.append((ret, el))
+                return ret
+
+            argscopy = for_each_in(Var, copyandadd, args)
+            ret = fn(*argscopy, **kwargs)
+            continuefn(oldctx)
+            retcopy = for_each_in(Var, copyandaddrev, ret)
+
+            vc_glue(oldctx, newctx, argret)
+
+            return retcopy
+
+        return subqap__
+
+    return subqap_
+    
+
 #
 #
 #def prove():
-#    if options.do_rebuild():
-#        qaplens,blklen,extlen,sigs = qapsplit.qapsplit()
-#        sz = 1<<((max([max(qaplens.values()),blklen,extlen])-1).bit_length())
-#        pubsz = 1<<((extlen-1).bit_length()) if extlen is not None else 0
-#        print "qaplen:", max(qaplens.values()), "blklen:", blklen, "extlen:", extlen, "sz", sz, "pubsz", pubsz
 #
-#        cursz, curpubsz = qaptools.runqapgen.ensure_mkey(sz, pubsz)
 #
-#        for nm in sigs.keys():
-#            qaptools.runqapgenf.ensure_ek(nm, sigs[nm], 1<<((qaplens[nm]-1).bit_length()))
-#
-#    qaptools.runqapprove.run()
-#
-#    allfs = list(schedule.oftype("function"))
-#    (eqs,eks,vks) = map(set,zip(*[(fn[1], fn[2], fn[3]) for fn in allfs])) if allfs!=[] else (set(),set(), set())
-#    alles = list(schedule.oftype("external"))
-#    (wrs,cms) = map(set,zip(*[(fn[2], fn[3]) for fn in alles])) if alles!=[] else (set(),set())
-#
-#    if os.path.isfile(options.get_mpkey_file()) and all([os.path.isfile(vk) for vk in vks]):
-#        vercom = qaptools.runqapver.run()
-#        print >>sys.stderr, "Verification succeeded"
-#    else:
-#        vercom = qaptools.runqapver.getcommand()
-#        print >>sys.stderr, "Verification keys missing, skipping verification"
-#
-#    print >>sys.stderr, "  prover keys/eqs: ", options.get_mkey_file(), " ".join(eks), " ".join(eqs), options.get_schedule_file()
-#    print >>sys.stderr, "  prover data:     ", " ".join(wrs)
-#    print >>sys.stderr, "  verifier keys:   ", options.get_mpkey_file(), " ".join(vks), options.get_schedule_file()
-#    print >>sys.stderr, "  verifier data:   ", " ".join(cms), options.get_proof_file(), options.get_io_file()
-#    print >>sys.stderr, "  verifier cmd:    ", vercom
-#    if options.do_rebuild() and (cursz>sz or curpubsz>pubsz):
-#        print >>sys.stderr, "** Evaluation/public keys larger than needed for function: " +\
-#                            str(cursz)+">"+str(sz) + " or " + str(curpubsz)+">"+str(pubsz)+ "."
-#        print >>sys.stderr, "** To re-create, remove " + options.get_mkey_file() + " and " +\
-#                            options.get_mpkey_file() + " and run again."
-#
-#    #print >>sys.stderr, "  key material + proof material:"
-#    #print >>sys.stderr, " ", options.get_mpkey_file(), vks,\
-#    #                    options.get_schedule_file(), , bcs
-#
-#if __name__ == "__main__":
-#    prove()
-#else:
-#    if 'sphinx' not in sys.modules and options.do_pysnark() and options.do_proof():
-#        import atexit
-#        atexit.register(maybe(prove))
-#
-#
-#from gmpy2 import invert
-#import os.path
-#
-#import options
-#import qaptools.runqapgen
-#import qaptools.runqapinput
-#
-#from options import vc_p
-#
-#import random as rndom
-#random = rndom.SystemRandom()
-#
-#qape = None                # qap equation file (only for key generation)
-#qapv = None                # qap wire value file
-#qapvo = None
-#
-#vc_ctx = None
-#vc_ctr = dict()
-#vc_ioctr = dict()
-#
-#def init():
-#    global qape, qapv, qapvo
-#
-#    if options.do_pysnark():
-#        qapv = open(options.get_wire_file(), "w")
-#        print >>qapv, "# PySNARK wire values "
-#
-#        qapvo = open(options.get_io_file(), "w")
-#        print >>qapvo, "# PySNARK i/o"
-#
-#    if options.do_rebuild():
-#        qape = open(options.get_eqs_file(), "w")
-#        print >>qape, "# PySNARK equations"
-#
-#
-#def inited(fn):
-#    def inited_(*args, **kwargs):
-#        if vc_ctx is None:
-#            init()
-#            enterfn("main", "main")
-#        return fn(*args, **kwargs)
-#
-#    return inited_
-#
-#
-#@inited
-#def printwire(sh, nm):
-#    if qapv is not None:
-#        print >>qapv, nm+":", sh
-#        qapv.flush()
-#
-#@inited
-#def printwireout(sh, nm):
-#    if qapvo is not None:
-#        print >>qapvo, nm+":", sh
-#        qapvo.flush()
-#
-#
-#def enterfn(fname, call=None):
-#    """
-#    Start a new call of the given function type
-#    :param fname: Function name. All instances of the same function should execute the exact same sequence of instructions
-#    :param call: Call name. Should be globally unique (autogenerated if not given)
-#    :return: Call name
-#    """
-#
-#    global vc_ctx, vc_ctr, vc_ioctr
-#
-#    if vc_ctx is None: init()
-#
-#    if call is None:
-#        call=(vc_ctx+"_"+str(vc_ctr[vc_ctx])+"_" if vc_ctx is not None else "") + fname
-#
-#    if qape!=None: print >>qape, "[function]", fname, call
-#    
-#    vc_ctx = call
-#    vc_ctr[vc_ctx] = 0
-#    vc_ioctr[vc_ctx] = 0
-#
-#    printwire(random.randint(0, vc_p-1), call+"/deltav") 
-#    printwire(random.randint(0, vc_p-1), call+"/deltaw")
-#    printwire(random.randint(0, vc_p-1), call+"/deltay")
-#
-#    printwire(1, call + "/onex")
-#    if qape!=None:
-#        print >>qape, "* = 1 " + call + "/one -1 " + call + "/onex"
-#
-#    return call
-#
-#
-#@inited
-#def continuefn(call):
-#    """
-#    Continue execution of the given function call
-#    :param call: Function call
-#    :return: None
-#    """
-#    global vc_ctx, vc_ctr
-#    vc_ctx = call
-#    vc_ctr[vc_ctx] += 1
-#
-#
-#def for_each_in(cls, f, struct):
-#    """ Recursively traversing all lists and tuples in struct, apply f to each
-#        element that is an instance of cls. Returns structure with f applied. """
-#    if isinstance(struct, list):
-#        return map(lambda x: for_each_in(cls, f, x), struct)
-#    elif isinstance(struct, tuple):
-#        return tuple(map(lambda x: for_each_in(cls, f, x), struct))
-#    else:
-#        if isinstance(struct, cls):
-#            return f(struct)
-#        else:
-#            return struct
-#
-#
-#@inited
-#def vc_declare_block(bn, vcs, rnd1=None):
-#    global vc_ctx, vc_ctr
-#
-#    vcs = map(lambda x: x.ensure_single(), vcs)
-#    if rnd1 is None: rnd1 = random.randint(0, vc_p-1)
-#    printwire(rnd1, vc_ctx+"/rnd1_"+bn)
-#    printwire(random.randint(0, vc_p-1), vc_ctx+"/rnd2_"+bn)
-#
-#    if qape is not None:
-#        print >> qape, "[ioblock]", vc_ctx, bn, " ".join(map(lambda x: x.sig[0][1], vcs))
-#        qape.flush()
-#
-#    return vcs
-#
-#@inited
-#def importcomm(bn, nm=None):
-#    global vc_ctr, vc_ctx
-#    if nm is None:
-#        nm = str(vc_ctr[vc_ctx])
-#        vc_ctr[vc_ctx] += 1
-#
-#    fl = options.get_block_file(bn)
-#    if not os.path.isfile(fl):
-#        raise IOError("Wire file " + fl + " for imported block \"" + bn + "\" does not exist")
-#    vals = [int(ln.strip()) for ln in open(fl)]
-#    vvals = vc_declare_block(nm, [Var(val,True) for val in vals[:-1]], vals[-1])
-#
-#    if qape is not None:
-#        print >> qape, "[external]", vc_ctx, nm, bn
-#        qape.flush()
-#
-#    return vvals
-#
-#@inited
-#def exportcomm(vals, bn, nm=None):
-#    global vc_ctr, vc_ctx
-#    if nm is None:
-#        nm = str(vc_ctr[vc_ctx])
-#        vc_ctr[vc_ctx] += 1
-#
-#    valsp = [val if isinstance(val, Var) else Var(val,True) for val in vals]
-#
-#    rnd = random.randint(0,vc_p-1)
-#    vc_declare_block(nm, valsp, rnd)
-#
-#    qaptools.runqapinput.writecomm(bn, [val.value for val in valsp], rnd)
-#    qaptools.runqapgen.ensure_mkey(-1, len(vals))
-#    qaptools.runqapinput.run(bn)
-#
-#    if qape != None:
-#        print >> qape, "[external]", vc_ctx, nm, bn
-#        qape.flush()
-#
-#    return valsp
-#
-#
-#def vc_glue(ctx1, ctx2, vals):
-#    global vc_ctx, vc_ctr
-#
-#    bakctx = vc_ctx
-#
-#    rndv = random.randint(0, vc_p - 1)
-#
-#    vc_ctx = ctx1
-#    bn1 = str(vc_ctr[vc_ctx])
-#    vc_ctr[vc_ctx] += 1
-#    vc_declare_block(bn1, map(lambda x: x[0], vals), rndv)
-#
-#    vc_ctx = ctx2
-#    bn2 = str(vc_ctr[vc_ctx])
-#    vc_ctr[vc_ctx] += 1
-#    vc_declare_block(bn2, map(lambda x: x[1], vals), rndv)
-#
-#    vc_ctx = bakctx
-#
-#    if qape!=None:
-#        print >>qape, "[glue]", ctx1, bn1, ctx2, bn2
-#        qape.flush()
-#
-#
-#def subqap(nm):
-#    def subqap_(fn):
-#        @inited
-#        def subqap__(*args, **kwargs):
-#            global vc_ctx
-#
-#            if kwargs: raise ValueError("@subqap-decorated functions cannot have keyword arguments")
-#
-#            oldctx = vc_ctx
-#            call = enterfn(nm)
-#            newctx = vc_ctx
-#
-#            argret = []
-#
-#            def copyandadd(el):
-#                ret = Var(el.value, True)
-#                argret.append((el, ret))
-#                return ret
-#
-#            def copyandaddrev(el):
-#                ret = Var(el.value, True)
-#                argret.append((ret, el))
-#                return ret
-#
-#            argscopy = for_each_in(Var, copyandadd, args)
-#            ret = fn(*argscopy, **kwargs)
-#            continuefn(oldctx)
-#            retcopy = for_each_in(Var, copyandaddrev, ret)
-#
-#            vc_glue(oldctx, newctx, argret)
-#
-#            return retcopy
-#
-#        return subqap__
-#
-#    return subqap_
-#
-#
-#@inited
-#def vc_assert_mult(v,w,y):
-#    """ Add QAP equation asserting that v*w=y. """
-#    if (v.value*w.value-y.value)%vc_p!=0: raise ValueError("QAP equation did not hold")
-#
-#    if qape!=None:
-#        print >>qape, v.strsig(), "*", w.strsig(), "=", y.strsig(), "."
-#        qape.flush()
-#        
-#class Var:
-#    """ A variable of the verifiable computation """
-#    @inited
-#    def __init__(self, val, sig=None):
-#        """ Constructor.
-#
-#        If sig is None, this is an I/O variable with an automatic label.
-#        If sig is a string, this is an I/O variable with a given name.
-#        If sig is True, this is an internal variable with an automatic label.
-#        If sig is anything else, the signature is set to this value.
-#        """
-#        global vc_ctx, vc_ctr, vc_ioctr
-#
-#        self.value = val % vc_p
-#
-#        if sig==None or sig==True or isinstance(sig, str) or isinstance(sig, unicode):
-#            vc_ctr[vc_ctx] += 1
-#            sid = vc_ctx + "/" + str(vc_ctr[vc_ctx])
-#            printwire(val, sid)
-#            self.sig = [(1,sid)]
-#
-#            if sig!=True:
-#                if sig==None:
-#                    vc_ioctr[vc_ctx] += 1
-#                    sido = vc_ctx + "/o_" + str(vc_ioctr[vc_ctx])
-#                else:
-#                    sido = vc_ctx + "/o_" + sig
-#
-#                printwireout(val, sido)
-#
-#                if qape != None:
-#                    print >> qape, "*", "= 1", sid, "-1", sido
-#                    qape.flush()
-#        else:
-#            self.sig = sig
-#
-#        if len(self.sig)>100:
-#            vc_ctr[vc_ctx] += 1
-#            sid = vc_ctx + "/" + str(vc_ctr[vc_ctx])
-#            printwire(val, sid)
-#
-#            if qape!=None:
-#                print >>qape, "*", "=", self.strsig(), "-1", sid
-#                qape.flush()
-#
-#            self.sig = [(1,sid)]
 #
 #    @classmethod
 #    def vars(cls, vals, nm, dim=1):
@@ -469,8 +392,6 @@ def prove():
 #        return [var.val(nm+"_"+str(ix).zfill(ln)) for (ix,var) in enumerate(vars)]
 #
 #    def strsig(self):
-#        """ Return string representation of linear combination represented by this VcShare. """
-#        return " ".join(map(lambda (c,v): str(c)+" "+v, self.sig))
 #
 #    def __repr__(self):
 #        """ Return string representation of this VcShare. """
@@ -495,7 +416,7 @@ def prove():
 #    @classmethod
 #    def zero(cls):
 #        """ Return a VcShare representing the value zero. """
-#        return Var(0, [])
+#        
 #    
 #    @classmethod
 #    @inited

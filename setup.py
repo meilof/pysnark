@@ -66,6 +66,7 @@ setup(name='PySNARK',
       author_email='meilof@gmail.com',
       url='https://github.com/meilof/pysnark',
       packages=['pysnark', 'pysnark.qaptools'],
+      package_data={'pysnark.qaptools': []},
       ext_modules=[CMakeExtension("pysnark.libsnark", cmake_lists_dir="depends/python-libsnark"),
                    CMakeExtension("pysnark.qaptools.all", cmake_lists_dir="depends/qaptools")
                   ],

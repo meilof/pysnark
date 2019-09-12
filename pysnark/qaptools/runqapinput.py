@@ -30,7 +30,7 @@ import random
 import subprocess
 import sys
 
-import pysnark.options
+from . import options
 from . import runqapgen
 
 
@@ -45,14 +45,14 @@ def run(bname):
     :return: None
     """
 
-    bfile = pysnark.options.get_block_file(bname)
-    bcomm = pysnark.options.get_block_comm(bname)
+    bfile = options.get_block_file(bname)
+    bcomm = options.get_block_comm(bname)
 
-    mpkey = pysnark.options.get_mpkey_file()
+    mpkey = options.get_mpkey_file()
     print("Building block commitment", bcomm, "from wires", bfile, file=sys.stderr)
 
     blockcomm = open(bcomm, "w")
-    ret = subprocess.call([pysnark.options.get_qaptool_exe("qapinput"), mpkey, bfile], stdout=blockcomm)
+    ret = subprocess.call([options.get_qaptool_exe("qapinput"), mpkey, bfile], stdout=blockcomm)
     blockcomm.close()
     if ret != 0:
         sys.exit(2)
@@ -68,9 +68,9 @@ def writecomm(blocknm, vals, rnd=None):
     :return: None
     """
 
-    blockfile = open(pysnark.options.get_block_file(blocknm), "w")
+    blockfile = open(options.get_block_file(blocknm), "w")
     for val in vals: print(val, file=blockfile)
-    print(random.SystemRandom().randint(0, pysnark.options.vc_p-1), file=blockfile)
+    print(random.SystemRandom().randint(0, options.vc_p-1), file=blockfile)
     blockfile.close()
 
 

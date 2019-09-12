@@ -31,32 +31,10 @@ import os
 vc_p = 21888242871839275222246405745257275088548364400416034343698204186575808495617
 """ The modulus used in the verifiable computation. All computations are performed using modular arithmetic with this modulus. """
 
-def get_from_environ(nm, default):
-    if nm in os.environ:
-        ret = os.environ[nm]
-        return ret if ret!="" or ret[-1]=="/" else ret+"/"
-    else:
-        return default
-
-def do_pysnark():
-    if "PYSNARK_ENABLED" in os.environ: return os.environ["PYSNARK_ENABLED"]=="1"
-    return True
-
-def do_rebuild():
-    if "PYSNARK_REBUILD" in os.environ: return os.environ["PYSNARK_REBUILD"]=="1"
-
-    return os.path.isfile(get_mskey_file()) or \
-        (not os.path.isfile(get_mpkey_file()) and not os.path.isfile(get_mkey_file()))
-
-def do_proof():
-    if "PYSNARK_PROVE" in os.environ: return os.environ["PYSNARK_PROVE"]=="1"
-    return True
-
 datadir = os.environ["PYSNARK_KEYDIR"] if "PYSNARK_KEYDIR" in os.environ else ""
 pdatadir = os.environ["PYSNARK_PROOFDIR"] if "PYSNARK_PROOFDIR" in os.environ else datadir
 
-_ROOT = os.path.abspath(os.path.dirname(__file__))
-qaptoolsdir = os.path.join(_ROOT, 'qaptools', '')
+qaptoolsdir = os.path.abspath(os.path.dirname(__file__))
 qaptoolsdir = os.environ["QAPTOOLS_BIN"] if "QAPTOOLS_BIN" in os.environ else qaptoolsdir
 
 exefix = '.exe' if os.name == 'nt' else ''

@@ -33,8 +33,7 @@ import shutil
 import subprocess
 import sys
 
-import options
-from atexitmaybe import maybe
+import pysnark.qaptools.options
 
 def tog1(tok):  return [0, 0] if tok == "0" else [int(x, 0) for x in tok.split("_")]
 def tog2(tok):  return [0, 0, 0, 0] if tok == "0" else [int(x, 0) for x in tok[1:-1].replace("]_[", ",").split(",")]

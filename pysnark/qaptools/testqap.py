@@ -37,8 +37,8 @@ Run with
   python -m pysnark.testqap
 """
 
-import options
-from runtime import vc_p
+import pysnark.qaptools.options
+from pysnark.useqaptools import vc_p
 
 if __name__ == "__main__":
     vals = {}

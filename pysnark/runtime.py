@@ -1,14 +1,29 @@
 # Copytight (C) Meilof Veeningen, 2019
 
+import os
 import sys
 
+# check if already backend loaded
 if "pysnark.useqaptools" in sys.modules:
     backend=sys.modules["pysnark.useqaptools"]
 elif "pysnark.usenone" in sys.modules:
     backend=sys.modules["pysnark.usenone"]
 elif "pysnark.uselibsnark" in sys.modules:
     backend=sys.modules["pysnark.uselibsnark"]
+elif "PYSNARK_BACKEND" in os.environ:
+    if os.environ["PYSNARK_BACKEND"]=="qaptools":
+        import pysnark.useqaptools
+        backend=pysnark.useqaptools
+    elif os.environ["PYSNARK_BACKEND"]=="libsnark":
+        import pysnark.uselibsnark
+        backend=pysnark.uselibsnark
+    else:
+        if os.environ["PYSNARK_BACKEND"]!="none":
+            print("*** PySNARK: unknown backend in environment variables: " + os.environ["PYSNARK_BACKEND"])
+        import pysnark.usenone
+        backend=pysnark.usenone
 else:
+    # load defaults
     try:
         import pysnark.uselibsnark
         backend=pysnark.uselibsnark
@@ -19,7 +34,7 @@ else:
         except:
             import pysnark.usenone
             backend=pysnark.usenone
-            print("*** Neither libsnark nor qaptools seems to work, not using any backend", file=sys.stderr)
+            print("*** PySNARK: no backend avaiable, not making proofs", file=sys.stderr)
             
 
 """

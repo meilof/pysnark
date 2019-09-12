@@ -26,8 +26,9 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-import options
 import sys
+
+import pysnark.qaptools.options
 
 def contextualize(lst):
     global context
@@ -69,16 +70,16 @@ def qapsplit():
     fns = dict()
     extblocks = set()
 
-    schedf = open(options.get_schedule_file(), "w")
+    schedf = open(pysnark.qaptools.options.get_schedule_file(), "w")
 
-    for ln in open(options.get_eqs_file()):
+    for ln in open(pysnark.qaptools.options.get_eqs_file()):
         ln = ln.strip()
         if ln=="" or ln[0]=="#": continue
         toks = ln.strip().split(" ")
 
         if toks[0]=="[function]":
             fns[toks[2]]=toks[1]
-            print("[function]", toks[2], options.get_eqs_file_fn(toks[1]), options.get_ek_file(toks[1]), options.get_vk_file(toks[1]), file=schedf)
+            print("[function]", toks[2], pysnark.qaptools.options.get_eqs_file_fn(toks[1]), pysnark.qaptools.options.get_ek_file(toks[1]), pysnark.qaptools.options.get_vk_file(toks[1]), file=schedf)
             #print "function ", toks[2], toks[1]
         elif toks[0]=="[ioblock]":
             chk,lst = contextualize(toks[3:])
@@ -87,7 +88,7 @@ def qapsplit():
             if not toks[1] in blocks: blocks[toks[1]]=[]
             blocks[toks[1]].append((toks[2],lst))
         elif toks[0]=="[external]":
-            print(toks[0], toks[1], toks[2], options.get_block_file(toks[3]), options.get_block_comm(toks[3]), file=schedf)
+            print(toks[0], toks[1], toks[2], pysnark.qaptools.options.get_block_file(toks[3]), pysnark.qaptools.options.get_block_comm(toks[3]), file=schedf)
             extblocks.add((toks[1],toks[2]))
         elif toks[0]=="[glue]":
             print(ln, file=schedf)
@@ -106,7 +107,7 @@ def qapsplit():
         if fns[x] in hexs and hexs[fns[x]]!=hs:
             raise ValueError("*** Inconsistent functions: " + fns[x]+"."+hs + "<->" + fns[x]+"."+hexs[fns[x]])
         if not fns[x] in hexs:
-            outf = open(options.get_eqs_file_fn(fns[x]), "w")
+            outf = open(pysnark.qaptools.options.get_eqs_file_fn(fns[x]), "w")
             print("\n".join(q+[]), file=outf)
             outf.close()
             hexs[fns[x]]=hs

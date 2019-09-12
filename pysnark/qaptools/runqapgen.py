@@ -30,7 +30,7 @@ import os
 import subprocess
 import sys
 
-import pysnark.options
+from . import options
 
 
 def run(eksize, pksize, genmk=False):
@@ -42,15 +42,15 @@ def run(eksize, pksize, genmk=False):
     :param genmk: True if a new master secret key should be generated, False otherwise
     :return: None
     """
-    mskfile = pysnark.options.get_mskey_file()
-    mkeyfile = pysnark.options.get_mkey_file()
-    mpkeyfile = pysnark.options.get_mpkey_file()
+    mskfile = options.get_mskey_file()
+    mkeyfile = options.get_mkey_file()
+    mpkeyfile = options.get_mpkey_file()
 
     if not genmk and not os.path.isfile(mskfile):
         raise IOError("Could not enlarge master key materiak: master secret key missing")
 
     print("*** " + ("Generating" if genmk else "Enlarging") + " master key material", file=sys.stderr)
-    if subprocess.call([pysnark.options.get_qaptool_exe("qapgen"), str(max(pksize,eksize,0)), str(max(pksize,0)),
+    if subprocess.call([options.get_qaptool_exe("qapgen"), str(max(pksize,eksize,0)), str(max(pksize,0)),
                         mskfile, mkeyfile, mpkeyfile]) != 0:
         sys.exit(2)
 
@@ -62,8 +62,8 @@ def get_mekey_size():
     :return: Size, or -1 if key does not exist
     """
     try:
-        mekf = open(pysnark.options.get_mkey_file())
-        curmk = int(mekf.next().strip().split(" ")[2])
+        mekf = open(options.get_mkey_file())
+        curmk = int(next(mekf).strip().split(" ")[2])
         mekf.close()
         return curmk
     except IOError:
@@ -77,8 +77,8 @@ def get_mpkey_size():
     :return: Size, or -1 if key does not exist
     """
     try:
-        mpkf = open(pysnark.options.get_mpkey_file())
-        curmpk = int(mpkf.next().strip().split(" ")[2])
+        mpkf = open(options.get_mpkey_file())
+        curmpk = int(next(mpkf).strip().split(" ")[2])
         mpkf.close()
         return curmpk
     except IOError:
@@ -103,8 +103,8 @@ def ensure_mkey(eksize, pksize):
     curek = get_mekey_size()
     curpk = get_mpkey_size()
 
-    havemsk = os.path.isfile(pysnark.options.get_mskey_file())
-    havekeys = os.path.isfile(pysnark.options.get_mpkey_file()) or os.path.isfile(pysnark.options.get_mkey_file())
+    havemsk = os.path.isfile(options.get_mskey_file())
+    havekeys = os.path.isfile(options.get_mpkey_file()) or os.path.isfile(options.get_mkey_file())
 
     if curek < eksize or curpk < pksize:
         if havemsk:
@@ -124,4 +124,4 @@ if __name__ == "__main__":
     argeksize = int(sys.argv[1])
     argpksize = int(sys.argv[2])
 
-    run(argeksize, argpksize, not os.path.isfile(pysnark.options.get_mskey_file()))
+    run(argeksize, argpksize, not os.path.isfile(options.get_mskey_file()))

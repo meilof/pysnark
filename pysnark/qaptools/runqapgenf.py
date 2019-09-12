@@ -30,7 +30,7 @@ import os.path
 import subprocess
 import sys
 
-import pysnark.options as psopt
+import pysnark.qaptools.options as psopt
 
 def get_ekfile_sig(ekfile):
     """
@@ -43,7 +43,7 @@ def get_ekfile_sig(ekfile):
     if not os.path.exists(ekfile): return ""
 
     ekf = open(ekfile)
-    cursig = ekf.next().strip().split(" ")[0]
+    cursig = next(ekf).strip().split(" ")[0]
     ekf.close()
     return cursig
 

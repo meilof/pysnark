@@ -32,8 +32,8 @@ import subprocess
 import random
 import sys
 
-import options
-import qaptools.runqapgen
+import pysnark.qaptools.options
+import pysnark.qaptools.runqapgen
 
 if __name__ == "__main__":
     if len(sys.argv)<2:
