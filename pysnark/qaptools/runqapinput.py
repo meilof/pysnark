@@ -68,9 +68,10 @@ def writecomm(blocknm, vals, rnd=None):
     :return: None
     """
 
+    if rnd is None: rnd = random.SystemRandom().randint(0, options.vc_p-1)
     blockfile = open(options.get_block_file(blocknm), "w")
     for val in vals: print(val, file=blockfile)
-    print(random.SystemRandom().randint(0, options.vc_p-1), file=blockfile)
+    print(rnd, file=blockfile)
     blockfile.close()
 
 
