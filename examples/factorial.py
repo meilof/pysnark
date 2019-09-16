@@ -19,7 +19,7 @@ def factorial_while(n):
     busy = 1
     
     for i in range(2, FAC_MAX+1):
-        busy = busy&((i-1)!=n)
+        busy = busy&(i!=n+1)
         ret = ret*if_then_else(busy, i, 1)
     
     return ret
@@ -28,8 +28,8 @@ def factorial_while_2(n):
     @_while
     def _(_ = {"ret":1}):
         for i in range(2, FAC_MAX+1):
+            yield i!=n+1
             _["ret"]=_["ret"]*i
-            yield i!=n
     return _["ret"]
 
 def benchmark_factorial(nm, fn):

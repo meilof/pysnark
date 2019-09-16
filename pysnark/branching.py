@@ -36,11 +36,16 @@ def _if(cond, returns=None, globmod=None, globvars=None):
             raise ArgumentError("Incorrect defaults: " + str(defs))
         retbak = returns.copy()
 
-        # run function
-        if defs is None:
-            ret = guarded(cond)(fn)()
-        else:
-            ret = guarded(cond)(fn)(returns)
+        myex = None
+        
+        try:
+            # run function
+            if defs is None:
+                ret = guarded(cond)(fn)()
+            else:
+                ret = guarded(cond)(fn)(returns)
+        except Exception as exc:
+            myex = exc
         
         # update modified globals
         for nm in globvars:
@@ -55,6 +60,7 @@ def _if(cond, returns=None, globmod=None, globvars=None):
             if not returns[nm] is retbak[nm]:
                 returns[nm]=if_then_else(cond, returns[nm], retbak[nm])
         
+        if myex is not None: raise myex
         return ret if not ret is None else returns
     return __if
 
