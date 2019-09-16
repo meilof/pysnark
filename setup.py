@@ -15,9 +15,34 @@ cmake_cmd_args = []
 for f in sys.argv:
     if f.startswith('-D'):
         cmake_cmd_args.append(f)
-
 for f in cmake_cmd_args:
     sys.argv.remove(f)
+    
+disable_libsnark = False
+if "--disable-libsnark" in sys.argv:
+    disable_libsnark = True
+    sys.argv.remove("--disable-libsnark")
+
+disable_qaptools = False
+if "--disable-qaptools" in sys.argv:
+    disable_qaptools = True
+    sys.argv.remove("--disable-qaptools")
+    
+qaptools_bin = None
+for i in sys.argv:
+    if i.startswith("--qaptools-bin="):
+        qaptools_bin = i[15:]
+        sys.argv.remove(i)
+        break
+    
+if "-h" in sys.argv or "--help" in sys.argv:
+    print("PySNARK setup.py\n\n" +
+          "PySNARK options:\n\n" +
+    
+          "  --disable-libsnark  disable libsnark backend\n" +
+          "  --disable-qaptools  disable qaptools backend\n" +
+          "  --qaptools=bin=...  use precompiled qaptools from given directory\n" +
+          "  -D...               arguments for cmake compilation of libsnark/qaptools\n")
 
 class CMakeExtension(Extension):
     def __init__(self, name, cmake_lists_dir='.', **kwa):
@@ -59,16 +84,23 @@ class CMakeBuild(build_ext):
             subprocess.check_call(['cmake', '--build', '.'],
                                   cwd=tempdir)
 
+if disable_qaptools and disable_libsnark:  
+    my_exts = None
+else:
+    my_exts=[] + [CMakeExtension("pysnark.libsnark.all", cmake_lists_dir="depends/python-libsnark")] if not disable_libsnark else [] + [CMakeExtension("pysnark.qaptools.all", cmake_lists_dir="depends/qaptools") if not disable_qaptools else []]
+
+
 setup(name='PySNARK',
       version='0.2',
       description='Python zk-SNARK execution environment',
       author='Meilof Veeningen',
       author_email='meilof@gmail.com',
       url='https://github.com/meilof/pysnark',
-      packages=['pysnark', 'pysnark.qaptools'],
-      package_data={'pysnark.qaptools': []},
-      ext_modules=[CMakeExtension("pysnark.libsnark", cmake_lists_dir="depends/python-libsnark"),
-                   CMakeExtension("pysnark.qaptools.all", cmake_lists_dir="depends/qaptools")
-                  ],
-      cmdclass={'build_ext': CMakeBuild})
+      packages=['pysnark'] +
+                  (['pysnark.qaptools'] if not disable_qaptools else []) +
+                  (['pysnark.libsnark'] if not disable_libsnark else []),
+      package_data={'pysnark.qaptools': []} if not disable_qaptools else {},
+      ext_modules = my_exts,
+      cmdclass={'build_ext': CMakeBuild} if not (disable_qaptools and disable_libsnark) else {}
+)
 

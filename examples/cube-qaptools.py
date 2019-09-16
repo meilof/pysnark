@@ -3,7 +3,7 @@
 import sys
 
 #import pysnark.usenone
-import pysnark.useqaptools
+import pysnark.libsnark.backend
 from pysnark.runtime import snark, PrivVal
 
 @snark

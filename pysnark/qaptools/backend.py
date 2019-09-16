@@ -37,15 +37,15 @@ import random as rndom
 import subprocess
 import sys
 
-from .qaptools import options
-from .qaptools.options import vc_p
-import pysnark.qaptools.qapsplit
-import pysnark.qaptools.runqapgen
-import pysnark.qaptools.runqapinput
-import pysnark.qaptools.runqapgenf
-import pysnark.qaptools.runqapprove
-import pysnark.qaptools.runqapver
-import pysnark.qaptools.schedule
+from . import options
+from .options import vc_p
+from . import qapsplit
+from . import runqapgen
+from . import runqapinput
+from . import runqapgenf
+from . import runqapprove
+from . import runqapver
+from . import schedule
 
 random = rndom.SystemRandom()
 
@@ -142,7 +142,7 @@ def add_constraint(v, w, y):
     
 @inited
 def prove():
-    qaplens,blklen,extlen,sigs = pysnark.qaptools.qapsplit.qapsplit()
+    qaplens,blklen,extlen,sigs = qapsplit.qapsplit()
     
     #print("qaplens", qaplens, "blklen", blklen, "extlen", extlen, "sigs", sigs)
     if extlen is None: extlen = 0
@@ -152,29 +152,29 @@ def prove():
     pubsz = 1<<((extlen-1).bit_length()) if extlen is not None else 0
     print("qaplen:", max(qaplens.values()), "blklen:", blklen, "extlen:", extlen, "sz", sz, "pubsz", pubsz)
 
-    cursz, curpubsz = pysnark.qaptools.runqapgen.ensure_mkey(sz, pubsz)
+    cursz, curpubsz = runqapgen.ensure_mkey(sz, pubsz)
 
     for nm in list(sigs.keys()):
-        pysnark.qaptools.runqapgenf.ensure_ek(nm, sigs[nm], 1<<((qaplens[nm]-1).bit_length()))
+        runqapgenf.ensure_ek(nm, sigs[nm], 1<<((qaplens[nm]-1).bit_length()))
 
-    pysnark.qaptools.runqapprove.run()
+    runqapprove.run()
 
-    allfs = list(pysnark.qaptools.schedule.oftype("function"))
+    allfs = list(schedule.oftype("function"))
     (eqs,eks,vks) = list(map(set,list(zip(*[(fn[1], fn[2], fn[3]) for fn in allfs])))) if allfs!=[] else (set(),set(), set())
-    alles = list(pysnark.qaptools.schedule.oftype("external"))
+    alles = list(schedule.oftype("external"))
     (wrs,cms) = list(map(set,list(zip(*[(fn[2], fn[3]) for fn in alles])))) if alles!=[] else (set(),set())
 
     if os.path.isfile(options.get_mpkey_file()) and all([os.path.isfile(vk) for vk in vks]):
-        vercom = pysnark.qaptools.runqapver.run()
+        vercom = runqapver.run()
         print("Verification succeeded", file=sys.stderr)
     else:
-        vercom = pysnark.qaptools.runqapver.getcommand()
+        vercom = runqapver.getcommand()
         print("Verification keys missing, skipping verification", file=sys.stderr)
 
-    print("  prover keys/eqs: ", options.get_mkey_file(), " ".join(eks), " ".join(eqs), pysnark.qaptools.options.get_schedule_file(), file=sys.stderr)
+    print("  prover keys/eqs: ", options.get_mkey_file(), " ".join(eks), " ".join(eqs), options.get_schedule_file(), file=sys.stderr)
     print("  prover data:     ", " ".join(wrs), file=sys.stderr)
-    print("  verifier keys:   ", options.get_mpkey_file(), " ".join(vks), pysnark.qaptools.options.get_schedule_file(), file=sys.stderr)
-    print("  verifier data:   ", " ".join(cms), options.get_proof_file(), pysnark.qaptools.options.get_io_file(), file=sys.stderr)
+    print("  verifier keys:   ", options.get_mpkey_file(), " ".join(vks), options.get_schedule_file(), file=sys.stderr)
+    print("  verifier data:   ", " ".join(cms), options.get_proof_file(), options.get_io_file(), file=sys.stderr)
     print("  verifier cmd:    ", vercom, file=sys.stderr)
     if cursz>sz or curpubsz>pubsz:
         print("** Evaluation/public keys larger than needed for function: " +\
@@ -308,9 +308,9 @@ def exportcomm(vals, bn, nm=None):
     rnd = random.randint(0,vc_p-1)
     vc_declare_block(nm, valsp, rnd)
     
-    pysnark.qaptools.runqapinput.writecomm(bn, [val.value for val in valsp], rnd)
-    pysnark.qaptools.runqapgen.ensure_mkey(-1, len(vals))
-    pysnark.qaptools.runqapinput.run(bn)
+    runqapinput.writecomm(bn, [val.value for val in valsp], rnd)
+    runqapgen.ensure_mkey(-1, len(vals))
+    runqapinput.run(bn)
 
     if qape is not None:
         print("[external]", vc_ctx, nm, bn, file=qape)

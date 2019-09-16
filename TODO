@@ -1,3 +1,7 @@
+* loader .py ???
+* remove gtest 
+* solve double dependency thing?
+* does making a source distribution work?
 * --enable-libsnark, --enable-qaptools
 * libsnark ../xbyak, ../ate-pairing laten gebruiken? libqap met cmake?
     http://mingw-w64.org/doku.php/download

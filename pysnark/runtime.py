@@ -3,37 +3,37 @@
 import os
 import sys
 
-# check if already backend loaded
-if "pysnark.useqaptools" in sys.modules:
-    backend=sys.modules["pysnark.useqaptools"]
-elif "pysnark.usenone" in sys.modules:
-    backend=sys.modules["pysnark.usenone"]
-elif "pysnark.uselibsnark" in sys.modules:
-    backend=sys.modules["pysnark.uselibsnark"]
+# load backend
+
+if "pysnark.qaptools.backend" in sys.modules:
+    backend=sys.modules["pysnark.qaptools.backend"]
+elif "pysnark.nobackend" in sys.modules:
+    backend=sys.modules["pysnark.nobackend"]
+elif "pysnark.libsnark.backend" in sys.modules:
+    backend=sys.modules["pysnark.libsnark.backend"]
 elif "PYSNARK_BACKEND" in os.environ:
     if os.environ["PYSNARK_BACKEND"]=="qaptools":
-        import pysnark.useqaptools
-        backend=pysnark.useqaptools
+        import pysnark.qaptools.backend
+        backend=pysnark.qaptools.backend
     elif os.environ["PYSNARK_BACKEND"]=="libsnark":
-        import pysnark.uselibsnark
-        backend=pysnark.uselibsnark
+        import pysnark.libsnark.backend
+        backend=pysnark.libsnark.backend
     else:
         if os.environ["PYSNARK_BACKEND"]!="none":
             print("*** PySNARK: unknown backend in environment variables: " + os.environ["PYSNARK_BACKEND"])
-        import pysnark.usenone
-        backend=pysnark.usenone
+        import pysnark.nobackend
+        backend=pysnark.nobackend
 else:
-    # load defaults
     try:
-        import pysnark.uselibsnark
-        backend=pysnark.uselibsnark
+        import pysnark.libsnark.backend
+        backend=pysnark.libsnark.backend
     except:
         try:
-            import pysnark.useqaptools
-            backend=pysnark.useqaptools
+            import pysnark.qaptools.backend
+            backend=pysnark.qaptools.backend
         except:
-            import pysnark.usenone
-            backend=pysnark.usenone
+            import pysnark.nobackend
+            backend=pysnark.nobackend
             print("*** PySNARK: no backend avaiable, not making proofs", file=sys.stderr)
             
 
@@ -58,8 +58,22 @@ def assert_base_value(obj):
     if not is_base_value(obj):
         raise TypeError("value " + obj + " has unsupported type " + type(obj))
 
+num_constraints = 0
+        
 def add_constraint_unsafe(v, w, y):
+    global num_constraints
+    num_constraints += 1
     backend.add_constraint(v.lc, w.lc, y.lc)
+    
+def benchmark(callback = lambda x: print("*** Num constraints:", x)):
+    def _benchmark(fn):
+        def __benchmark(*args, **kwargs):
+            prev_num_constraints = num_constraints
+            ret = fn(*args, **kwargs)
+            callback(num_constraints - prev_num_constraints)
+            return ret
+        return __benchmark
+    return _benchmark
 
 """
 If set, all constraints added via do_add_constraint will be guarded by this guard,

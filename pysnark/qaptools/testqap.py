@@ -38,7 +38,7 @@ Run with
 """
 
 import pysnark.qaptools.options
-from pysnark.useqaptools import vc_p
+from pysnark.qaptools.backend import vc_p
 
 if __name__ == "__main__":
     vals = {}
