@@ -4,6 +4,7 @@
 # and https://github.com/m-pilia/disptools/blob/master/python_c_extension/CMakeLists.txt
 
 import os
+import shutil
 import subprocess
 import sys
 
@@ -34,6 +35,13 @@ for i in sys.argv:
         qaptools_bin = i[15:]
         sys.argv.remove(i)
         break
+        
+def use_qaptools_bins(target):
+    apps = ['qapgen', 'qapgenf', 'qapinput', 'qapcoeffcache', 'qapprove', 'qapver']
+    exefix = '.exe' if os.name == 'nt' else ''
+
+    for app in apps:
+         shutil.copy2(qaptools_bin+'/'+app, target+"/"+app)
     
 if "-h" in sys.argv or "--help" in sys.argv:
     print("PySNARK setup.py\n\n" +
@@ -48,6 +56,7 @@ class CMakeExtension(Extension):
     def __init__(self, name, cmake_lists_dir='.', **kwa):
         Extension.__init__(self, name, sources=[], **kwa)
         self.cmake_lists_dir = os.path.abspath(cmake_lists_dir)
+        self.prefun = kwa["prefun"] if "prefun" in kwa else None
 
 class CMakeBuild(build_ext):
     def build_extensions(self):
@@ -59,8 +68,13 @@ class CMakeBuild(build_ext):
 
         for ext in self.extensions:
             extdir = os.path.abspath(os.path.dirname(self.get_ext_fullpath(ext.name)))
-            
             tempdir = self.build_temp+"/"+ext.name
+            if not os.path.exists(tempdir):
+                os.makedirs(tempdir)
+            
+            if ext.prefun:
+                ext.prefun(extdir)
+                continue
 
             cmake_args = [
                 '-DCMAKE_LIBRARY_OUTPUT_DIRECTORY={}'.format(extdir),
@@ -70,24 +84,15 @@ class CMakeBuild(build_ext):
                 '-DCMAKE_ARCHIVE_OUTPUT_DIRECTORY={}'.format(tempdir),
                 '-DPYTHON_EXECUTABLE={}'.format(sys.executable)                
             ]
-
             cmake_args += cmake_cmd_args
-
-            if not os.path.exists(tempdir):
-                os.makedirs(tempdir)
                 
-            # Config
-            subprocess.check_call(['cmake', ext.cmake_lists_dir] + cmake_args,
-                                  cwd=tempdir)
-
-            # Build
-            subprocess.check_call(['cmake', '--build', '.'],
-                                  cwd=tempdir)
+            subprocess.check_call(['cmake', ext.cmake_lists_dir] + cmake_args, cwd=tempdir)
+            subprocess.check_call(['cmake', '--build', '.'], cwd=tempdir)
 
 if disable_qaptools and disable_libsnark:  
     my_exts = None
 else:
-    my_exts=[] + [CMakeExtension("pysnark.libsnark.all", cmake_lists_dir="depends/python-libsnark")] if not disable_libsnark else [] + [CMakeExtension("pysnark.qaptools.all", cmake_lists_dir="depends/qaptools") if not disable_qaptools else []]
+    my_exts=[] + [CMakeExtension("pysnark.libsnark.all", cmake_lists_dir="depends/python-libsnark")] if not disable_libsnark else [] + [CMakeExtension("pysnark.qaptools.all", cmake_lists_dir="depends/qaptools", prefun=use_qaptools_bins if not qaptools_bin is None else None) if not disable_qaptools else []]
 
 
 setup(name='PySNARK',
