@@ -41,6 +41,10 @@ def add_constraint(v, w, y):
     #    needed?
     
 def prove():
+    if pb.num_constraints()==0:
+        # libsnark does not work in this case, add a no-op
+        pb.add_r1cs_constraint(libsnark.r1cs_constraint(libsnark.linear_combination(),libsnark.linear_combination(),libsnark.linear_combination()))
+        
     cs=pb.get_constraint_system_pubs()
     pubvals=pb.primary_input_pubs();
     privvals=pb.auxiliary_input_pubs();

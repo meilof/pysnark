@@ -1,11 +1,10 @@
-* loader .py ???
+* libsnark: do not run if no equations
 * remove gtest 
 * solve double dependency thing?
+    * libsnark ../xbyak, ../ate-pairing laten gebruiken? libqap met cmake?
+        http://mingw-w64.org/doku.php/download
 * does making a source distribution work?
-* --enable-libsnark, --enable-qaptools
-* libsnark ../xbyak, ../ate-pairing laten gebruiken? libqap met cmake?
-    http://mingw-w64.org/doku.php/download
-* windows build environment under mac os?
+* windows cross-compiling?
 * energy saving branches
    - bits: use 0
    - use guard as ONE
