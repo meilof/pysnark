@@ -1,4 +1,3 @@
-* libsnark: do not run if no equations
 * remove gtest 
 * solve double dependency thing?
     * libsnark ../xbyak, ../ate-pairing laten gebruiken? libqap met cmake?
