@@ -1,5 +1,6 @@
 # Copyright (C) Meilof Veeningen
 
+import pysnark.nobackend
 import pysnark.runtime
 
 from pysnark.runtime import PrivVal, LinComb, benchmark, guarded
@@ -58,23 +59,25 @@ def benchmark_lin_bl(fn):
 
     return str(coef)+"*k+"+str(const) + " [" + str(coef2)+"*k+"+str(const2) + "]"
 
-print("__lt__              ", benchmark_lin_bl(lambda:LinComb.ZERO<LinComb.ZERO))
-print("assert_lt           ", benchmark_lin_bl(lambda:LinComb.ZERO.assert_lt(1)))
+def several(lst):
+    if len(set(lst))!=1:
+        raise AssertionError("Different values in benchmerk")
+    return lst[0]
 
-print("__le__              ", benchmark_lin_bl(lambda:LinComb.ZERO<=LinComb.ZERO))
-print("assert_le           ", benchmark_lin_bl(lambda:LinComb.ZERO.assert_le(1)))
+print("<, <=, >, >=              ", several([benchmark_lin_bl(lambda:LinComb.ZERO<LinComb.ZERO),
+                                       benchmark_lin_bl(lambda:LinComb.ZERO<=LinComb.ZERO),
+                                       benchmark_lin_bl(lambda:LinComb.ZERO>LinComb.ZERO),
+                                       benchmark_lin_bl(lambda:LinComb.ZERO>=LinComb.ZERO)]))
+print("assert_lt, _le, _gt, _ge  ", several([benchmark_lin_bl(lambda:LinComb.ZERO.assert_lt(1)),
+                                             benchmark_lin_bl(lambda:LinComb.ZERO.assert_le(1)),
+                                             benchmark_lin_bl(lambda:LinComb.ONE.assert_gt(0)),
+                                             benchmark_lin_bl(lambda:LinComb.ZERO.assert_ge(0))]))
 
 print("__eq__              ", benchmark_con_bl(lambda:LinComb.ZERO==LinComb.ZERO))
 print("assert_eq           ", benchmark_con_bl(lambda:LinComb.ZERO.assert_eq(LinComb.ZERO)))
 
 print("__ne__              ", benchmark_con_bl(lambda:LinComb.ZERO!=LinComb.ZERO))
 print("assert_ne           ", benchmark_con_bl(lambda:LinComb.ZERO.assert_ne(LinComb.ONE)))
-
-print("__gt__              ", benchmark_lin_bl(lambda:LinComb.ZERO>LinComb.ZERO))
-print("assert_gt           ", benchmark_lin_bl(lambda:LinComb.ONE.assert_gt(0)))
-
-print("__ge__              ", benchmark_lin_bl(lambda:LinComb.ZERO>=LinComb.ZERO))
-print("assert_ge           ", benchmark_lin_bl(lambda:LinComb.ZERO.assert_ge(0)))
 
 print("__add__ (base)      ", benchmark_con_bl(lambda:LinComb.ZERO+0))
 print("__add__ (lc)        ", benchmark_con_bl(lambda:LinComb.ZERO+LinComb.ZERO))
