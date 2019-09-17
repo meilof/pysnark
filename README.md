@@ -1,6 +1,6 @@
 # PySNARK
 
-*(This repository is for the libsnark-based version of PySNARK. See [here](https://github.com/Charterhouse/pysnark) for the original libqap-based version.)*
+*(This is a re-write of the original version of PySNARK, still available [here](https://github.com/Charterhouse/pysnark).)*
 
 PySNARK lets you program zk-SNARKs (aka verifiable computations) directly in Python 3. For example, the following code runs a SNARK program to compute a cube of a number, generates key material, generates a proof, and verifies it:
 
