@@ -1,0 +1,5 @@
+theme: jekyll-theme-cayman
+title: PySNARK
+description: Library for programming SNARKs directly in Python
+show_downloads: ["true"]
+exclude: ["depends"]
