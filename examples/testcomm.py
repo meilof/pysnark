@@ -26,7 +26,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from pysnark.useqaptools import importcomm, exportcomm, subqap
+from pysnark.qaptools.backend import importcomm, exportcomm, subqap
 from pysnark.qaptools.runqapinput import gencomm
 
 from pysnark.runtime import PrivVal

@@ -4,8 +4,10 @@
         http://mingw-w64.org/doku.php/download
 * does making a source distribution work?
 * windows cross-compiling?
+* benchmarking: @guarded_and_unguarded
+* libsnark: automatically load key given by hash?
 * energy saving branches
-   - bits: use 0
+   - bits: use 0 (and other ValueError computations)
    - use guard as ONE
    - check for other computations
      (could be beneficial to have safe instead of unsafe, document this
@@ -31,3 +33,5 @@
 * rename / operator because it's too dangerous
 * make ggh hashing more transparent: one function, conditonal % inside
 * check where .value is used: can we avoid all use outside of runtime?
+
+* jupyter, mybinder.org, https://aws.amazon.com/getting-started/projects/build-serverless-web-app-lambda-apigateway-s3-dynamodb-cognito/
