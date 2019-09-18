@@ -1,4 +1,4 @@
-# Portions copyright (C) Meilof Veeningen 2019
+    # Portions copyright (C) Meilof Veeningen 2019
 #
 # Portions copyright (c) 2016-2018 Koninklijke Philips N.V. All rights
 # reserved. A copyright license for redistribution and use in source and
@@ -57,8 +57,10 @@ qape = None                # qap equation file (only for key generation)
 qapv = None                # qap wire value file
 qapvo = None
 
+runtime = None
+
 def init():
-    global qape, qapv, qapvo
+    global qape, qapv, qapvo, runtime
 
     qapv = open(options.get_wire_file(), "w")
     print("# PySNARK wire values ", file=qapv)
@@ -70,16 +72,18 @@ def init():
     print("# PySNARK equations", file=qape)
     
     import pysnark.runtime
+    runtime = sys.modules["pysnark.runtime"]
 
 def inited(fn):
     def inited_(*args, **kwargs):
+        global vc_ctx
         if vc_ctx is None:
+            vc_ctx = ""
             init()
             enterfn("main", "main")
         return fn(*args, **kwargs)
 
     return inited_
-
 
 class Sig:
     def __init__(self, sig):
@@ -262,7 +266,7 @@ def vc_declare_block(bn, vcs, rnd1=None):
     def ensure_single(x):
         if len(x.lc.sig)==1: return x
             
-        ret = pysnark.runtime.PrivVal(x.value)
+        ret = runtime.PrivVal(x.value)
         ret.assert_eq(x)
         return ret
 
@@ -288,7 +292,7 @@ def importcomm(bn, nm=None):
     if not os.path.isfile(fl):
         raise IOError("Wire file " + fl + " for imported block \"" + bn + "\" does not exist")
     vals = [int(ln.strip()) for ln in open(fl)]
-    vvals = vc_declare_block(nm, [pysnark.runtime.PrivVal(val) for val in vals[:-1]], vals[-1])
+    vvals = vc_declare_block(nm, [runtime.PrivVal(val) for val in vals[:-1]], vals[-1])
 
     if qape is not None:
         print("[external]", vc_ctx, nm, bn, file=qape)
@@ -303,7 +307,7 @@ def exportcomm(vals, bn, nm=None):
         nm = str(vc_ctr[vc_ctx])
         vc_ctr[vc_ctx] += 1
 
-    valsp = [val if isinstance(val, pysnark.runtime.LinComb) else pysnark.runtime.PrivVal(val) for val in vals]
+    valsp = [val if isinstance(val, runtime.LinComb) else runtime.PrivVal(val) for val in vals]
 
     rnd = random.randint(0,vc_p-1)
     vc_declare_block(nm, valsp, rnd)
@@ -358,19 +362,19 @@ def subqap(nm):
             argret = []
 
             def copyandadd(el):
-                ret = pysnark.runtime.PrivVal(el.value)
+                ret = runtime.PrivVal(el.value)
                 argret.append((el, ret))
                 return ret
 
             def copyandaddrev(el):
-                ret = pysnark.runtime.PrivVal(el.value)
+                ret = runtime.PrivVal(el.value)
                 argret.append((ret, el))
                 return ret
 
-            argscopy = for_each_in(pysnark.runtime.LinComb, copyandadd, args)
+            argscopy = for_each_in(runtime.LinComb, copyandadd, args)
             ret = fn(*argscopy, **kwargs)
             continuefn(oldctx)
-            retcopy = for_each_in(pysnark.runtime.LinComb, copyandaddrev, ret)
+            retcopy = for_each_in(runtime.LinComb, copyandaddrev, ret)
 
             vc_glue(oldctx, newctx, argret)
 

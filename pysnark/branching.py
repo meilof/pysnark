@@ -16,7 +16,10 @@ def if_then_else(cond, truev, falsev):
     if (not ignore_errors) and cond.value!=0 and cond.value!=1:
         raise(ValueError("not a bit: " + str(cond)))
     
-    return falsev+cond*(truev-falsev)
+    if isinstance(truev, list):
+        return [falsevi+cond*(truevi-falsevi) for (truevi,falsevi) in zip(truev,falsev)]
+    else:
+        return falsev+cond*(truev-falsev)
 
 def _if(cond, returns=None, globmod=None, globvars=None):
     def __if(fn):
@@ -77,7 +80,7 @@ def _while(fn):
     try:
         while True:
             cond = _if(guard, returns = freturns, globmod=fmod, globvars=fglobs)(lambda: next(gen))
-            guard = guard&cond
+            guard = guard*cond
     except StopIteration:
         pass
     

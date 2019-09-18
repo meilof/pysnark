@@ -89,22 +89,29 @@ def guarded(cond):
             
             _orig_guard = guard
             _orig_ignore_errors = ignore_errors
+            _orig_ONE = LinComb.ONE
             guard = cond if _orig_guard is None else cond&_orig_guard
-            ignore_errors = (cond.value==0)
+            ignore_errors = ignore_errors or (cond.value==0)
+            LinComb.ONE = guard
             
             try:
                 ret = fn(*args, **kwargs)
                 guard = _orig_guard
                 ignore_errors = _orig_ignore_errors
+                LinComb.ONE = _orig_ONE
             except:
                 guard = _orig_guard
                 ignore_errors = _orig_ignore_errors
+                LinComb.ONE = _orig_ONE
                 raise
         
             return ret
         
         return __guarded
     return _guarded
+
+def is_dummy():
+    return (guard is not None and guard.value==0)
 
 """ Add constraint v*w=y to the constraint system, and update running computation hash. """
 def add_constraint(v,w,y):
@@ -183,13 +190,16 @@ class LinComb:
     def __truediv__(self, other): 
         """ Proper division """
         if isinstance(other, LinComb):
-            if self.value % other.value != 0:
+            if (not is_dummy()) and self.value % other.value == 0:
+                res = PrivVal(self.value/other.value)
+            elif ignore_errors:
+                res = PrivVal(0)
+            else:
                 raise ValueError(str(self.value) + " is not properly divisible by " + str(other.value))
-            res = PrivVal(self.value/other.value)
             add_constraint(other, res, self)
             return res
         elif is_base_value(other):
-            if self.value % other != 0:
+            if self.value % other == 0:
                 raise ValueError(str(self.value) + " is not properly divisible by " + str(other))
             return LinComb(self.value/other, self.lc*backend.fieldinverse(other))
         else:
@@ -281,10 +291,13 @@ class LinComb:
         """ Proper division by LinComb """
         if not is_base_value(other): return NotImplemented
         
-        if other % self.value != 0:
+        if (not is_dummy()) and other % self.value == 0:
+            res = PrivVal(other/self.value)
+        elif ignore_errors:
+            res = PrivVal(0)
+        else:
             raise ValueError(str(other.value) + " is not properly divisible by " + str(self.value))
-            
-        res = PrivVal(other/self.value)
+        
         add_constraint(self, res, other*LinComb.ONE)
         return res
         
@@ -353,15 +366,18 @@ class LinComb:
     def check_positive(self, bits=None):
         if bits is None: bits=bitlength
             
-        if (not ignore_errors) and self.value.bit_length()>bits:
+        if (not is_dummy()) and self.value>=0 and self.value.bit_length()<=bits:
+            ret = PrivVal(1 if self.value>=0 else 0)
+            abs = self.value if self.value>=0 else -self.value
+            bits = [PrivVal((abs&(1<<ix))>>ix) for ix in range(bits)]
+        elif ignore_errors:
+            ret = PrivVal(0)
+            bits = [PrivVal(0) for _ in range(bits)]
+        else:
             raise ValueError("value " + str(self.value) + " is not a " + str(bits) + "-bit integer")
             
-        ret = PrivVal(1 if self.value>=0 else 0)
-        abs = self.value if self.value>=0 else -self.value
-        
-        bits = [PrivVal((abs&(1<<ix))>>ix) for ix in range(bits)]
         for bit in bits: bit.assert_bool_unsafe()
-            
+        
         # if ret==1, then requires that 2*self=self+sum, so sum=self
         # if ret==0, this requires that 0=self+sum, so sum=-self
         add_constraint(2*ret, self, self+LinComb.from_bits(bits))
@@ -391,10 +407,13 @@ class LinComb:
         add_constraint(LinComb.ZERO, LinComb.ZERO, self)        
             
     def assert_nonzero(self):
-        if (not ignore_errors) and self.value==0:
+        if (not is_dummy()) and self.value!=0:
+            wit = PrivVal(backend.fieldinverse(self.value))    
+        elif ignore_errors:
+            wit = PrivVal(0)
+        else:
             raise ValueError("Value " + str(self.value) + " is not zero")
-            
-        wit = PrivVal(backend.fieldinverse(self.value if self.value!=0 else 1))
+        
         add_constraint(self, wit, LinComb.ONE)
     
 LinComb.ZERO = LinComb(0, backend.zero())

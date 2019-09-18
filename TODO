@@ -1,3 +1,6 @@
+* while: only overwrite if really changed -> do in if_then_else?
+* to prevent confusion, also use LinComb.ONE.value for __sub__, __add__, etc
+  problem of secretsanta: cond that is yielded is maybe not a bit!
 * remove gtest 
 * solve double dependency thing?
     * libsnark ../xbyak, ../ate-pairing laten gebruiken? libqap met cmake?
