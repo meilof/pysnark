@@ -33,17 +33,17 @@ class BranchingContext:
         
 _ = BranchingContext()
 
-# ("if",ctx,icond,cond,nodefvals,bakbak)
+# ("if",ctx,(icond,cond,nodefvals,bakbak))
 __cond_stack = []
 
 def _if(cond,ctx=None):
     if ctx is None: ctx = _
-    __cond_stack.append(("if",ctx,1-cond,cond,None,ctx.baks))
+    __cond_stack.append(("if",ctx,(1-cond,cond,None,ctx.baks)))
     ctx.baks.clear()
     return True
 
 def _ifelse_update():
-    (_if,ctx,icond,cond,nodefvals,bakbak) = __cond_stack[-1]
+    (_if,ctx,(icond,cond,nodefvals,bakbak)) = __cond_stack[-1]
     if _if!="if": raise RuntimeError("_elseif used in context of " + _if)
         
     if nodefvals is None:
@@ -59,27 +59,31 @@ def _ifelse_update():
             nodefvals[nm] = if_then_else(cond, ctx.vals[nm], nodefvals[nm])
             del ctx.vals[nm]
     
-    __cond_stack[-1] = (_if,ctx,icond,cond,nodefvals,bakbak)
+    __cond_stack[-1] = (_if,ctx,(icond,cond,nodefvals,bakbak))
     ctx.conditional_update(cond)
     ctx.baks.clear()
 
 def _elif(nwcond):
     _ifelse_update()
-    (_if,ctx,icond,_,nodefvals,bakbak) = __cond_stack[-1]
-    __cond_stack[-1] = (_if,ctx,icond&(1-nwcond),icond&nwcond,nodefvals,bakbak)
+    (_if,ctx,(icond,_,nodefvals,bakbak)) = __cond_stack[-1]
+    __cond_stack[-1] = (_if,ctx,(icond&(1-nwcond),icond&nwcond,nodefvals,bakbak))
     return True
 
 def _else():
-    return _elif(1)
+    _ifelse_update()
+    (_if,ctx,(icond,_,nodefvals,bakbak)) = __cond_stack[-1]
+    __cond_stack[-1] = (_if,ctx,(None,icond,nodefvals,bakbak))
+    return True
 
 def _endif():
     _ifelse_update()
-    (_,ctx,_,_,nodefvals,bakbak)=__cond_stack.pop()
+    (_,ctx,(icond,_,nodefvals,bakbak))=__cond_stack.pop()
+    if len(nodefvals)>0 and icond is not None: raise RuntimeError("if branch set " + str(nodefvals) + " and no else branch")
     ctx.baks.update(bakbak)
     for nm in nodefvals: setattr(ctx,nm,nodefvals[nm])
     
 _.y=3
-if _if(PrivVal(0)):
+if _if(PrivVal(1)):
     _.x = 3
     if _if(PrivVal(1)):
         _.z = 4
