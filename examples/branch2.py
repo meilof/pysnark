@@ -1,99 +1,100 @@
+import copy
+
 import pysnark.nobackend
 import pysnark.runtime
 
-from pysnark.runtime import PrivVal
+from pysnark.runtime import PrivVal, LinComb
 from pysnark.branching import if_then_else
 
-# TODO: support dictionary argument, give error if called from function without a dict
+class BranchingContext:
+    vals = {}
+    baks = {}
 
-globs = {}
-
-class NoContext:
     def __getattr__(self, nm):
-        global globs
-        print("*** getting", nm)
-        return globs[nm]
+        if not nm in self.vals:
+            raise KeyError("variable not defined: " + nm)
+        elif isinstance(self.vals[nm], int) or isinstance(self.vals[nm], LinComb):
+            # immutable objects: return
+            return self.vals[nm]
+        else:  
+            # todo: deep copy/copy on write
+            raise TypeError("incorrect type: " + nm)
     
     def __setattr__(self, nm, val):
-        global globs
-        print("*** setting", nm, val)
-        globs[nm] = val
+        if not nm in self.baks:
+            self.baks[nm] = self.vals[nm] if nm in self.vals else None
         
-#_ = NoContext()
-#
-#_.a = 3
-#print(_.a)
+        self.vals[nm] = val
+        
+    def conditional_update(self, cond):
+        for nm in self.baks:
+            if not self.baks[nm] is None:
+                self.vals[nm] = if_then_else(cond, self.vals[nm], self.baks[nm])
+        
+_ = BranchingContext()
 
-class IfContext:
-    inif = True       # whether the current branch is the if branch
-    vals = {}         # overwritten values
-    nodefvals = set() # previous values that were not defined before the if
-    
-    def __init__(self, cond):
-        self.cond = cond
-        self.acond = 1-cond
-    
-    def __getattr__(self, nm):
-        global globs
+# ("if",ctx,icond,cond,nodefvals,bakbak)
+__cond_stack = []
 
-        if (not self.inif) and (not nm in self.vals) and (nm in self.nodefvals):
-            raise ValueError("no value set for " + nm)
-        
-        return globs[nm]
-    
-    def __setattr__(self, nm, val):
-        global globs
-        
-        # TODO: not ideal
-        if nm=="inif" or nm=="vals" or nm=="nodefvals" or nm=="cond" or nm=="acond": return object.__setattr__(self, nm, val)
-        
-        if not nm in globs or globs[nm] is None:
-            if self.inif:
-                self.nodefvals.add(nm)
-                globs[nm] = None
-            else:
-                raise ValueError("writing previously unset variable: " + nm)
-        
-        if not nm in self.vals: self.vals[nm] = globs[nm]
-        globs[nm] = val
-        
-    def _finish_prev(self):
-        if self.inif:
-            for nm in self.vals:
-                if not nm in self.nodefvals:
-                    globs[nm] = if_then_else(self.cond, globs[nm], self.vals[nm])
-        else:
-            for nm in self.nodefvals:
-                if not nm in self.vals: raise ValueError("branch did not set variable: " + nm)
-            
-            for nm in self.vals:
-                globs[nm] = if_then_else(self.cond, globs[nm], self.vals[nm])
-        
-    def _elif(self, cond):
-        self._finish_prev()
-        self.cond = self.acond & cond
-        self.acond = self.acond & (1-cond)
-        self.inif = False
-        self.vals = {}
-        
-    def _else(self):
-        self._finish_prev()
-        self.cond = self.acond
-        self.inif = False
-        self.vals = {}
-        
-    def _endif(self):
-        self._finish_prev()
-       
-globs["y"]=3
-_ = IfContext(PrivVal(1))
-_.x = 3
-_.y = 4
-_._elif(PrivVal(0))
-_.x = 1
-_.y = 5
-_._else()
-_.x = 7
-_._endif()
+def _ifelse(cond,ctx=None):
+    if ctx is None: ctx = _
+    __cond_stack.append(("if",ctx,1-cond,cond,None,ctx.baks))
+    ctx.baks.clear()
+    return True
 
-print(globs)
+def _ifelse_update():
+    (_if,ctx,icond,cond,nodefvals,bakbak) = __cond_stack[-1]
+    if _if!="if": raise RuntimeError("_elseif used in context of " + _if)
+        
+    if nodefvals is None:
+        nodefvals = {}
+        # exiting the if branch, check which values are newly written
+        for nm in ctx.baks:
+            if ctx.baks[nm] is None:
+                nodefvals[nm] = ctx.vals[nm]
+                del ctx.vals[nm]
+    else:
+        for nm in nodefvals:
+            if not nm in ctx.baks: raise RuntimeError("branch did not set value for " + nm)
+            nodefvals[nm] = if_then_else(cond, ctx.vals[nm], nodefvals[nm])
+            del ctx.vals[nm]
+    
+    __cond_stack[-1] = (_if,ctx,icond,cond,nodefvals,bakbak)
+    ctx.conditional_update(cond)
+    ctx.baks.clear()
+
+def _elif(nwcond):
+    _ifelse_update()
+    (_if,ctx,icond,_,nodefvals,bakbak) = __cond_stack[-1]
+    __cond_stack[-1] = (_if,ctx,icond&(1-nwcond),icond&nwcond,nodefvals,bakbak)
+    return True
+
+def _else():
+    return _elif(1)
+
+def _endif():
+    _ifelse_update()
+    (_,ctx,_,_,nodefvals,bakbak)=__cond_stack.pop()
+    ctx.baks.update(bakbak)
+    for nm in nodefvals: setattr(ctx,nm,nodefvals[nm])
+    
+_.y=3
+if _ifelse(PrivVal(0)):
+    _.x = 3
+    if _ifelse(PrivVal(1)):
+        _.z = 4
+    if _else():
+        _.z = 5
+    _endif()
+    _.y = 4
+if _elif(PrivVal(1)):
+    _.x = 1
+    _.y = 5
+    _.z = 10
+if _else():
+    _.x = 7
+    _.z = 2
+_endif()
+
+print(_.vals)
+
