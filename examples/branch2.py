@@ -36,7 +36,7 @@ _ = BranchingContext()
 # ("if",ctx,icond,cond,nodefvals,bakbak)
 __cond_stack = []
 
-def _ifelse(cond,ctx=None):
+def _if(cond,ctx=None):
     if ctx is None: ctx = _
     __cond_stack.append(("if",ctx,1-cond,cond,None,ctx.baks))
     ctx.baks.clear()
@@ -79,9 +79,9 @@ def _endif():
     for nm in nodefvals: setattr(ctx,nm,nodefvals[nm])
     
 _.y=3
-if _ifelse(PrivVal(0)):
+if _if(PrivVal(0)):
     _.x = 3
-    if _ifelse(PrivVal(1)):
+    if _if(PrivVal(1)):
         _.z = 4
     if _else():
         _.z = 5
