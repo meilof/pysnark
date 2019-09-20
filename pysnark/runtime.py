@@ -82,27 +82,38 @@ a dummy value will be added to satisfy them
 """
 guard = None
 
+def set_guard(cond):
+    global guard, ignore_errors
+
+    _orig_guard = guard
+    _orig_ignore_errors = ignore_errors
+    _orig_ONE = LinComb.ONE
+    
+    guard = cond if guard is None else cond&guard
+    ignore_errors = ignore_errors or (cond.value==0)
+    LinComb.ONE = guard
+    
+    return (_orig_guard,_orig_ignore_errors,_orig_ONE)
+
+def restore_guard(bak):
+    global guard, ignore_errors
+    
+    (_orig_guard,_orig_ignore_errors,_orig_ONE)=bak
+    guard = _orig_guard
+    ignore_errors = _orig_ignore_errors
+    LinComb.ONE = _orig_ONE    
+
+
 def guarded(cond):
     def _guarded(fn):
         def __guarded(*args, **kwargs):
-            global guard, ignore_errors
-            
-            _orig_guard = guard
-            _orig_ignore_errors = ignore_errors
-            _orig_ONE = LinComb.ONE
-            guard = cond if _orig_guard is None else cond&_orig_guard
-            ignore_errors = ignore_errors or (cond.value==0)
-            LinComb.ONE = guard
+            bak = enable_guard(cond)
             
             try:
                 ret = fn(*args, **kwargs)
-                guard = _orig_guard
-                ignore_errors = _orig_ignore_errors
-                LinComb.ONE = _orig_ONE
+                restore_guard(bak)
             except:
-                guard = _orig_guard
-                ignore_errors = _orig_ignore_errors
-                LinComb.ONE = _orig_ONE
+                restore_guard(bak)
                 raise
         
             return ret
@@ -369,7 +380,7 @@ class LinComb:
     def check_positive(self, bits=None):
         if bits is None: bits=bitlength
             
-        if (not is_dummy()) and self.value>=0 and self.value.bit_length()<=bits:
+        if (not is_dummy()) and self.value.bit_length()<=bits:
             ret = PrivVal(1 if self.value>=0 else 0)
             abs = self.value if self.value>=0 else -self.value
             bits = [PrivVal((abs&(1<<ix))>>ix) for ix in range(bits)]

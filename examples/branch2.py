@@ -4,7 +4,7 @@ import inspect
 import pysnark.nobackend
 import pysnark.runtime
 
-from pysnark.runtime import PrivVal, LinComb
+from pysnark.runtime import PrivVal, LinComb, set_guard, restore_guard
 from pysnark.branching import if_then_else
 
 class BranchingContext:
@@ -35,6 +35,7 @@ class IfContext:
         self.cond = cond
         self.nodefvals = None
         self.bak = ctx.backup()
+        self.origguard = set_guard(cond)
         
     def update(self):
         if self.nodefvals is None:
@@ -76,6 +77,7 @@ def _elif(nwcond):
     cur.update()
     cur.cond = cur.icond&nwcond
     cur.icond = cur.icond&(1-nwcond)
+    set_guard(cur.cond)
     return True
 
 def _else():
@@ -83,6 +85,7 @@ def _else():
     cur.update()
     cur.cond = cur.icond
     cur.icond = None
+    set_guard(cur.cond)
     return True
 
 def _endif():
@@ -90,7 +93,7 @@ def _endif():
     cur.update()
     if len(cur.nodefvals)>0 and cur.icond is not None: raise RuntimeError("if branch set " + str(cur.nodefvals) + " and no else branch")
     for nm in cur.nodefvals: cur.ctx.vals[nm]=cur.nodefvals[nm]
-        
+    restore_guard(cur.origguard)
         
 def test():
     __=BranchingContext()
@@ -143,6 +146,7 @@ class ObliviousIterator():
         self.ctx = ctx
         self.bak = ctx.backup()
         self.cond = (self.ix!=self.stop)
+        self.guardbak = set_guard(self.cond)
         _forstack.append(self)
         
     def update(self):
@@ -200,7 +204,8 @@ def _breakif(cond):
 #    self.cond = self.cond & cond
 
 def _endfor():
-    _forstack.pop()
+    it = _forstack.pop()
+    restore_guard(it.guardbak)
 
 k = PrivVal(9)
 _.sum = 0
@@ -249,6 +254,14 @@ _endif()
 
 print(_.tester.a)
 
+_.a=PrivVal(2)
+
+if _if(_.a<=7):
+    bits = _.a.to_bits(3)
+    _.a=bits[0]
+_endif()
+    
+print("a is", _.a)
 
 #    if inspect.getargspec(fn).defaults is not None:
 #        freturns = inspect.getargspec(fn).defaults[0]
