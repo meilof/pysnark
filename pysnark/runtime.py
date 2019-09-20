@@ -139,6 +139,9 @@ class LinComb:
     def __repr__(self):
         return "{" + str(self.value) + "}"
     
+    def __deepcopy__(self, memodict):
+        return self
+    
     # self<other, so other-self>0, so other-self-1>=0
     def __lt__(self, other): return (other-self-1).check_positive()
     def assert_lt(self, other): (other-self-1).assert_positive()

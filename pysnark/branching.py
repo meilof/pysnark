@@ -1,25 +1,28 @@
 # Copytight (C) Meilof Veeningen, 2019
 
-from .runtime import guarded, is_base_value, PubVal, PrivVal, ignore_errors
+from .runtime import guarded, is_base_value, PubVal, PrivVal, ignore_errors, is_base_value, LinComb
 
 import inspect
     
 def if_then_else(cond, truev, falsev):
+    if truev is falsev: return truev
+    
     if is_base_value(cond):
         if cond!=0 and cond!=1: 
             raise ValueError("not a boolean value: " + str(cond))
         return truev if cond else falsev
-    
-    if callable(truev): truev = guarded(cond)(truev)()
-    if callable(falsev): falsev = guarded(1-cond)(falsev)()        
- 
-    if (not ignore_errors) and cond.value!=0 and cond.value!=1:
+    elif (not ignore_errors) and cond.value!=0 and cond.value!=1:
         raise(ValueError("not a bit: " + str(cond)))
-    
-    if isinstance(truev, list):
-        return [falsevi+cond*(truevi-falsevi) for (truevi,falsevi) in zip(truev,falsev)]
     else:
-        return falsev+cond*(truev-falsev)
+        if callable(truev): truev = guarded(cond)(truev)()
+        if callable(falsev): falsev = guarded(1-cond)(falsev)()        
+ 
+        if isinstance(truev, list):
+            return [if_then_else(cond, truevi, falsevi) for (truevi,falsevi) in zip(truev,falsev)]
+        elif is_base_value(truev) or isinstance(truev, LinComb):
+            return falsev+cond*(truev-falsev)
+        else:
+            return truev.__if_then_else__(falsev, cond)
 
 def _if(cond, returns=None, globmod=None, globvars=None):
     def __if(fn):
