@@ -1,7 +1,7 @@
 # Copyright (C) Meilof Veeningen
 
 from pysnark.runtime import PrivVal, LinComb, benchmark
-from pysnark.branching import if_then_else, _while
+from pysnark.branching import BranchingValues, if_then_else, _range, _endfor, _breakif
 
 FAC_TEST = 5
 FAC_MAX = 10
@@ -25,12 +25,12 @@ def factorial_while(n):
     return ret
 
 def factorial_while_2(n):
-    @_while
-    def _(_ = {"ret":1}):
-        for i in range(2, FAC_MAX+1):
-            yield i!=n+1
-            _["ret"]=_["ret"]*i
-    return _["ret"]
+    _=BranchingValues()
+    _.ret=1
+    for i in _range(2,n+1,max=FAC_MAX+1):
+        _.ret=_.ret*i
+    _endfor()
+    return _.ret
 
 def benchmark_factorial(nm, fn):
     numc = 0

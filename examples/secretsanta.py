@@ -9,7 +9,7 @@ import pysnark.runtime
 
 from pysnark.runtime import PrivVal, LinComb
 
-from pysnark.branching import if_then_else, _while
+from pysnark.branching import if_then_else, BranchingValues, _range, _breakif, _endfor
 from pysnark.linalg import scalar_mul, vector_sub
 from pysnark.hash import ggh_hash
 from pysnark.pack import PackRepeat, PackList, PackIntMod, PackBool, PackSeed
@@ -63,14 +63,19 @@ def random_permutation(n, cur_rp):
 
 
 def random_derangement(n):
-    @_while
-    def _(_ = {"ret": [0]*n, "found": 0}):
-        for cur_rp in range(ntries):
-            _["ret"] = random_permutation(n, cur_rp)
-            isderangement = (functools.reduce(lambda x,y: x*y, [_["ret"][i] - i for i in range(n)])!=0)
-            _["found"]=_["found"]|isderangement
-            yield 1-isderangement # while no derangement found (equivalent to 1-_["found"])
-    return (_["found"],_["ret"])
+    _=BranchingValues()
+    
+    _.ret=[0]*n
+    _.found=0
+    
+    for cur_rp in _range(ntries):
+        _.ret = random_permutation(n, cur_rp)
+        isderangement = (functools.reduce(lambda x,y: x*y, [_.ret[i] - i for i in range(n)])!=0)
+        _.found=_.found|isderangement
+        _breakif(isderangement)
+    _endfor()
+        
+    return (_.found, _.ret)
 
 (found,ret) = random_derangement(nparties)
 
