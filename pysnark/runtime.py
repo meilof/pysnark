@@ -82,7 +82,7 @@ a dummy value will be added to satisfy them
 """
 guard = None
 
-def set_guard(cond):
+def add_guard(cond):
     global guard, ignore_errors
 
     _orig_guard = guard

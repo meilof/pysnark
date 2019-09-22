@@ -1,13 +1,14 @@
 import copy
 import inspect
+import sys
 
 import pysnark.nobackend
 import pysnark.runtime
 
-from pysnark.runtime import PrivVal, LinComb, set_guard, restore_guard
+from pysnark.runtime import PrivVal, LinComb, add_guard, restore_guard
 from pysnark.branching import if_then_else
 
-class BranchingContext:
+class BranchingValues:
     def __init__(self):
         self.vals = {}
 
@@ -24,39 +25,71 @@ class BranchingContext:
             ret[nm] = copy.deepcopy(val)
         return ret
         
-_ = BranchingContext()
+_ = BranchingValues()
 
-__ifstack = []
+_branchstack = []
 
-class IfContext:
+class BranchContext:
     def __init__(self, cond, ctx):
         self.ctx = ctx
-        self.icond = 1-cond
-        self.cond = cond
         self.nodefvals = None
-        self.bak = ctx.backup()
-        self.origguard = set_guard(cond)
+        self.enter(cond)
+                
+    def exit(self):
+        restore_guard(self.origguard)
         
-    def update(self):
         if self.nodefvals is None:
-            # finializing "if" branch"
             self.nodefvals = {}
             for nm in self.ctx.vals:
                 if not nm in self.bak:
                     self.nodefvals[nm] = self.ctx.vals[nm]
         else:
-            # finalizing other branch
             for nm in self.nodefvals:
                 if not nm in self.ctx.vals: raise RuntimeError("branch did not set value for " + nm)
                 self.nodefvals[nm] = if_then_else(self.cond, self.ctx.vals[nm], self.nodefvals[nm])
-
         for nm in self.nodefvals: del self.ctx.vals[nm]
 
         for nm in self.ctx.vals:
             if nm in self.bak:
                 self.ctx.vals[nm] = if_then_else(self.cond, self.ctx.vals[nm], self.bak[nm])
-                
-        self.bak = self.ctx.backup()
+            else:
+                raise RuntimeError("branch set spurious value: " + nm)
+        
+    def enter(self, nwcond):
+        self.bak = self.ctx.backup()        
+        self.cond = nwcond
+        self.origguard = add_guard(nwcond)
+        
+    def end(self):
+        self.exit()
+
+class IfContext(BranchContext):
+    def __init__(self, cond, ctx):
+        self.icond = 1-cond # should be before super().__init__ because may be guarded
+        super().__init__(cond, ctx)
+        
+    def _elif(self, nwcond):
+        if not callable(nwcond):
+            raise ValueError("argument to _elif should be a function")
+            
+        self.exit()
+        nwcond = nwcond()
+        nwicond = self.icond&(1-nwcond) # need to calculate before entering guard
+        self.enter(self.icond&nwcond)
+        self.icond = nwicond
+        
+    def _else(self):
+        self.exit()
+        self.enter(self.icond)
+        self.icond = None
+        
+    def end(self):
+        super().end()
+        if len(self.nodefvals)>0 and self.icond is not None:
+            raise RuntimeError("if branch set " + str(list(self.nodefvals.keys())) + " and no else branch")
+        else:
+            for nm in self.nodefvals: self.ctx.vals[nm]=self.nodefvals[nm]
+        
 
 def calledfromfunction():
     us = inspect.currentframe()
@@ -69,40 +102,24 @@ def _if(cond,ctx=None):
     if ctx is None:
         if calledfromfunction(): raise RuntimeError("should provide context if calling from function")
         ctx = _
-    __ifstack.append(IfContext(cond,ctx))
+    _branchstack.append(IfContext(cond,ctx))
     return True
 
 def _elif(nwcond):
-    cur = __ifstack[-1]
-    cur.update()
-    cur.cond = cur.icond&nwcond
-    cur.icond = cur.icond&(1-nwcond)
-    set_guard(cur.cond)
+    _branchstack[-1]._elif(nwcond)
     return True
 
 def _else():
-    cur = __ifstack[-1]
-    cur.update()
-    cur.cond = cur.icond
-    cur.icond = None
-    set_guard(cur.cond)
+    _branchstack[-1]._else()
     return True
 
 def _endif():
-    cur = __ifstack.pop()
-    cur.update()
-    if len(cur.nodefvals)>0 and cur.icond is not None: raise RuntimeError("if branch set " + str(cur.nodefvals) + " and no else branch")
-    for nm in cur.nodefvals: cur.ctx.vals[nm]=cur.nodefvals[nm]
-    restore_guard(cur.origguard)
+    _branchstack.pop().end()
         
 def test():
-    __=BranchingContext()
+    __=BranchingValues()
     
-    print(id(_.vals))
-    print(id(__.vals))
-    print("before _", _.vals)
-    
-    __.z = 40
+    #__.z = 40
     
     if _if(PrivVal(1), ctx=__):
         __.z = 100
@@ -110,7 +127,6 @@ def test():
         __.z = 200
     _endif()
         
-    print("after _", _.vals)
     return __.z
     
     
@@ -123,7 +139,8 @@ if _if(PrivVal(1)):
         _.z = 5
     _endif()
     _.y = test()
-if _elif(PrivVal(1)):
+    #_.z = 11
+if _elif(lambda:PrivVal(0)): 
     _.x = 1
     _.y = 5
     _.z = 10
@@ -134,48 +151,99 @@ _endif()
 
 print(_.vals)
 
+
+
+class WhileContext(BranchContext):
+    def exit(self):
+        super().exit()
+        if len(self.nodefvals)>0:
+            raise RuntimeError("conditional write to undefined variables: " + str(list(self.nodefvals.keys())))
+    
+    def _while(self, nwcond):
+        self.exit()
+        self.enter(self.cond&nwcond)
+        
+    def end(self):
+        super().end()
+
 _forstack = []
 
-class ObliviousIterator():
-    cond = 1
+def _while(cond,ctx=None):
+    if ctx is None:
+        if calledfromfunction(): raise RuntimeError("should provide context if calling from function")
+        ctx = _
+        
+    lineno = inspect.currentframe().f_back.f_lineno
+    if len(_branchstack)!=0 and isinstance(_branchstack[-1],WhileContext) and \
+       _branchstack[-1].ctx is ctx and _branchstack[-1].lineno == lineno:
+        _branchstack[-1]._while(cond)
+    else:
+        _branchstack.append(WhileContext(cond,ctx))
+        _branchstack[-1].lineno = lineno
+    return True
 
-    def __init__(self, start, stop, max, ctx):
-        self.ix = start
+def _endwhile():
+    _branchstack.pop().end()
+    
+def _breakif(cond):
+    _branchstack[-1]._while(1-cond)
+        
+done = 0
+_.w=0
+while _while(done!=PrivVal(5)) and done!=10:
+    print("in while loop")
+    _.w = done
+    done += 1
+    _breakif(done==3)
+_endwhile()
+    
+_.wh = 0
+_while(PrivVal(0))
+_.wh = 3
+_endwhile()
+
+print("after a while", len(_branchstack), _.wh, _.w)
+#sys.exit(0)
+
+
+class ObliviousIterator():
+    def __init__(self, start, stop, max, ctx, checkstopmax):
+        self.start = start
         self.stop = stop
         self.max = max
         self.ctx = ctx
-        self.bak = ctx.backup()
-        self.cond = (self.ix!=self.stop)
-        self.guardbak = set_guard(self.cond)
-        _forstack.append(self)
-        
-    def update(self):
-        for nm in self.ctx.vals:
-            if nm in self.bak:
-                self.ctx.vals[nm] = if_then_else(self.cond, self.ctx.vals[nm], self.bak[nm])
-            else:
-                raise RuntimeError("range conditional wrote to unset variable " + nm)
-
-        self.bak = self.ctx.backup()
+        self.ix = None
+        self.checkstopmax = checkstopmax
+#        print("doing while", self.ix, self.stop, self.ix!=self.stop)
+#        _while(self.ix!=self.stop, ctx=ctx)
         
     def __next__(self):
-        self.update()
-        
-        self.ix += 1
-        if self.ix==self.max:
-            # make sure that ix was not >max
-            nz = (self.cond & (self.ix!=self.stop))
-            if isinstance(nz,LinComb): 
-                nz.assert_zero()
+        if self.ix is None:
+            self.ix = self.start
+            _branchstack.append(WhileContext(self.ix!=self.stop,self.ctx))
+            return self.ix
+        else:
+            self.ix += 1
+            if self.ix<self.max:
+                _breakif(self.ix==self.stop)
+                return self.ix
             else:
-                assert nz==0
-            raise StopIteration
-            
-        self.cond = self.cond & (self.ix!=self.stop)
-        return self.ix
+                nz = _branchstack[-1].cond & (self.ix!=self.stop)
+                if isinstance(nz,LinComb): 
+                    nz.assert_zero()
+                else:
+                    assert nz==0
+                raise StopIteration
+#        if self.ix==self.max:
+            # make sure that ix was not >max
+#            nz = (self.cond & (self.ix!=self.stop))
+#            raise StopIteration
+
+#        _breakif(self.ix==self.stop)
+#        return self.ix
     
 class _range:
-    def __init__(self, arg1, arg2=None, max=None, ctx=None):
+    def __init__(self, arg1, arg2=None, max=None, ctx=None, checkstopmax=False):
         if arg2 is None:
             self.start = 0
             self.stop = arg1
@@ -190,31 +258,26 @@ class _range:
             if calledfromfunction(): raise RuntimeError("should provide context if calling from function")
             ctx = _
         self.ctx = ctx
+        self.checkstopmax = checkstopmax
         
     def __iter__(self):
-        return ObliviousIterator(self.start, self.stop, self.max, self.ctx)
+        return ObliviousIterator(self.start, self.stop, self.max, self.ctx, self.checkstopmax)
 
-def _breakif(cond):
-    cur = _forstack[-1]
-    
-    cur.update()
-    cur.cond = cur.cond&(1-cond)
-    
-    
-#    self.cond = self.cond & cond
 
 def _endfor():
-    it = _forstack.pop()
-    restore_guard(it.guardbak)
+    _branchstack.pop().end()
 
 k = PrivVal(9)
 _.sum = 0
-for i in _range(3, k, max=9):
-#    _breakif(i==3)
+for i in _range(k, max=9, checkstopmax=True):
+    print("in loop")
+    _breakif(i==3)
     _.sum = i
 _endfor()
 
 print("sum", _.sum)
+
+sys.exit(0)
 
 #print("nc", pysnark.runtime.num_constraints)
 #for i in _range(10, max=10):
