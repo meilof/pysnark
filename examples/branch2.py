@@ -2,7 +2,7 @@ import copy
 import inspect
 import sys
 
-import pysnark.nobackend
+#import pysnark.nobackend
 import pysnark.runtime
 
 from pysnark.runtime import PrivVal, LinComb, add_guard, restore_guard
@@ -153,6 +153,8 @@ print(_.vals)
 
 
 
+
+
 class WhileContext(BranchContext):
     def exit(self):
         super().exit()
@@ -196,6 +198,8 @@ while _while(done!=PrivVal(5)) and done!=10:
     done += 1
     _breakif(done==3)
 _endwhile()
+
+#sys.exit(0)
     
 _.wh = 0
 _while(PrivVal(0))
@@ -228,11 +232,8 @@ class ObliviousIterator():
                 _breakif(self.ix==self.stop)
                 return self.ix
             else:
-                nz = _branchstack[-1].cond & (self.ix!=self.stop)
-                if isinstance(nz,LinComb): 
-                    nz.assert_zero()
-                else:
-                    assert nz==0
+                if self.checkstopmax:
+                    (_branchstack[-1].cond&(self.ix!=self.stop)).assert_zero()
                 raise StopIteration
 #        if self.ix==self.max:
             # make sure that ix was not >max
@@ -277,7 +278,7 @@ _endfor()
 
 print("sum", _.sum)
 
-sys.exit(0)
+#sys.exit(0)
 
 #print("nc", pysnark.runtime.num_constraints)
 #for i in _range(10, max=10):

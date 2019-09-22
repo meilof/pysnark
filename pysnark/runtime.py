@@ -353,7 +353,7 @@ class LinComb:
         add_constraint(self, 1-self, LinComb.ZERO)
 
     def assert_bool_unsafe(self):
-        add_constraint_unsafe(self, 1-self, LinComb.ZERO)
+        add_constraint_unsafe(self, LinComb.ONE_SAFE-self, LinComb.ZERO)
         
     def to_bits(self, bits=None):
         if bits is None: bits=bitlength
@@ -409,7 +409,7 @@ class LinComb:
         
         # Trick from Pinocchio paper: if self is zero then ret=1 by first eq,
         # if self is nonzero then ret=0 by second eq
-        add_constraint_unsafe(self, wit, 1-ret)
+        add_constraint_unsafe(self, wit, LinComb.ONE_SAFE-ret)
         add_constraint_unsafe(self, ret, LinComb.ZERO)
         
         return ret
@@ -431,7 +431,8 @@ class LinComb:
         add_constraint(self, wit, LinComb.ONE)
     
 LinComb.ZERO = LinComb(0, backend.zero())
-LinComb.ONE = LinComb(1, backend.one())        
+LinComb.ONE = LinComb(1, backend.one())
+LinComb.ONE_SAFE = LinComb.ONE
 
 def PubVal(val):
     return LinComb(val, backend.pubval(val))

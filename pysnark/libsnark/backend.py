@@ -34,6 +34,7 @@ def add_constraint(v, w, y):
     
     pb.add_r1cs_constraint(libsnark.r1cs_constraint(v,w,y))
     
+    #if v.value*w.value!=y.value: raise ValueError()
     #TODO: check, add to hash
     #comphash = hash((comphash,tuple(v.sig),tuple(w.sig),tuple(y.sig)))
     #if not libsnark.check_mul(v.value, w.value, y.value):

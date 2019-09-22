@@ -1,3 +1,11 @@
+* energy-saving?
+   - get rid of it? it makes stuff much more complicated, not clear whether
+     it actually saves something
+   - if we do it, can also change PrivVal(..) etc -> but then we would need
+     another PrivVal_safe() as well
+   - do some benchmarking
+* dealing with huge values, e.g., compute 2^10000 gives segfault
+  time python3 exp.py 2 10000
 * TypeError instead of ValueError?
 * while: only overwrite if really changed -> do in if_then_else?
 * to prevent confusion, also use LinComb.ONE.value for __sub__, __add__, etc
