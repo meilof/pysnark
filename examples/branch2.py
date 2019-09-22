@@ -11,12 +11,16 @@ from pysnark.branching import if_then_else
 class BranchingValues:
     def __init__(self):
         self.vals = {}
+        self.stack = []
+        self.__setattr__ = self._setattr # override after initing the other two
+        
+    def __del__(self):
+        if len(self.stack)>0: raise RuntimeError("unclosed branches left")
 
     def __getattr__(self, nm):
         return self.vals[nm]
     
-    def __setattr__(self, nm, val):
-        if nm=="vals": return super().__setattr__(nm,val)
+    def _setattr(self, nm, val):
         self.vals[nm] = val
         
     def backup(self):
@@ -26,8 +30,6 @@ class BranchingValues:
         return ret
         
 _ = BranchingValues()
-
-_branchstack = []
 
 class BranchContext:
     def __init__(self, cond, ctx):
@@ -90,31 +92,39 @@ class IfContext(BranchContext):
         else:
             for nm in self.nodefvals: self.ctx.vals[nm]=self.nodefvals[nm]
         
+def getcontext(ctx):
+    if ctx is not None: return ctx
+    locs = inspect.currentframe().f_back.f_back.f_locals
+    if "_" in locs and isinstance(locs["_"], BranchingValues):
+        print("Found directly")
+        return locs["_"]
+    for nm in locs:
+        if isinstance(locs[nm], BranchingValues):
+            return locs[nm]
+    raise RuntimeError("no BranchingValues instance found in locals")
 
-def calledfromfunction():
-    us = inspect.currentframe()
-    # if called from module: us=us, us.f_back=_if, us.f_back.f_back=module, us.f_back.f_back.f_back is None
-    # if called from function: us=us, us.f_back=_if, us.f_back.f_back=fn, us.f_back.f_back.f_back is module
-    if us is None or us.f_back is None or us.f_back.f_back is None or us.f_back.f_back.f_back is None: return False
-    return True
+#def calledfromfunction():
+#    us = inspect.currentframe()
+#    # if called from module: us=us, us.f_back=_if, us.f_back.f_back=module, us.f_back.f_back.f_back is None
+#    # if called from function: us=us, us.f_back=_if, us.f_back.f_back=fn, us.f_back.f_back.f_back is module
+#    if us is None or us.f_back is None or us.f_back.f_back is None or us.f_back.f_back.f_back is None: return False
+#    return True
     
 def _if(cond,ctx=None):
-    if ctx is None:
-        if calledfromfunction(): raise RuntimeError("should provide context if calling from function")
-        ctx = _
-    _branchstack.append(IfContext(cond,ctx))
+    ctx = getcontext(ctx)
+    ctx.stack.append(IfContext(cond,ctx))
     return True
 
-def _elif(nwcond):
-    _branchstack[-1]._elif(nwcond)
+def _elif(nwcond,ctx=None):
+    getcontext(ctx).stack[-1]._elif(nwcond)
     return True
 
-def _else():
-    _branchstack[-1]._else()
+def _else(ctx=None):
+    getcontext(ctx).stack[-1]._else()
     return True
 
-def _endif():
-    _branchstack.pop().end()
+def _endif(ctx=None):
+    getcontext(ctx).stack.pop().end()
         
 def test():
     __=BranchingValues()
@@ -168,27 +178,23 @@ class WhileContext(BranchContext):
     def end(self):
         super().end()
 
-_forstack = []
-
 def _while(cond,ctx=None):
-    if ctx is None:
-        if calledfromfunction(): raise RuntimeError("should provide context if calling from function")
-        ctx = _
+    ctx = getcontext(ctx)
         
     lineno = inspect.currentframe().f_back.f_lineno
-    if len(_branchstack)!=0 and isinstance(_branchstack[-1],WhileContext) and \
-       _branchstack[-1].ctx is ctx and _branchstack[-1].lineno == lineno:
-        _branchstack[-1]._while(cond)
+    if len(ctx.stack)!=0 and isinstance(ctx.stack[-1],WhileContext) and \
+       ctx.stack[-1].ctx is ctx and ctx.stack[-1].lineno == lineno:
+        ctx.stack[-1]._while(cond)
     else:
-        _branchstack.append(WhileContext(cond,ctx))
-        _branchstack[-1].lineno = lineno
+        ctx.stack.append(WhileContext(cond,ctx))
+        ctx.stack[-1].lineno = lineno
     return True
 
-def _endwhile():
-    _branchstack.pop().end()
+def _endwhile(ctx=None):
+    getcontext(ctx).stack.pop().end()
     
-def _breakif(cond):
-    _branchstack[-1]._while(1-cond)
+def _breakif(cond,ctx=None):
+    getcontext(ctx).stack[-1]._while(1-cond)
         
 done = 0
 _.w=0
@@ -206,7 +212,7 @@ _while(PrivVal(0))
 _.wh = 3
 _endwhile()
 
-print("after a while", len(_branchstack), _.wh, _.w)
+print("after a while", len(_.stack), _.wh, _.w)
 #sys.exit(0)
 
 
@@ -224,16 +230,16 @@ class ObliviousIterator():
     def __next__(self):
         if self.ix is None:
             self.ix = self.start
-            _branchstack.append(WhileContext(self.ix!=self.stop,self.ctx))
+            self.ctx.stack.append(WhileContext(self.ix!=self.stop,self.ctx))
             return self.ix
         else:
             self.ix += 1
             if self.ix<self.max:
-                _breakif(self.ix==self.stop)
+                self.ctx.stack[-1]._while(self.ix!=self.stop)
                 return self.ix
             else:
                 if self.checkstopmax:
-                    (_branchstack[-1].cond&(self.ix!=self.stop)).assert_zero()
+                    (self.ctx.stack[-1].cond&(self.ix!=self.stop)).assert_zero()
                 raise StopIteration
 #        if self.ix==self.max:
             # make sure that ix was not >max
@@ -255,18 +261,15 @@ class _range:
         
         self.max = max
         
-        if ctx is None:
-            if calledfromfunction(): raise RuntimeError("should provide context if calling from function")
-            ctx = _
-        self.ctx = ctx
+        self.ctx=getcontext(ctx)
         self.checkstopmax = checkstopmax
         
     def __iter__(self):
         return ObliviousIterator(self.start, self.stop, self.max, self.ctx, self.checkstopmax)
 
 
-def _endfor():
-    _branchstack.pop().end()
+def _endfor(ctx=None):
+    getcontext(ctx).stack.pop().end()
 
 k = PrivVal(9)
 _.sum = 0
