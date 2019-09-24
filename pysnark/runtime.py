@@ -49,7 +49,10 @@ Operating principles:
 """
 _ignore_errors=False
 
-def ignore_errors():
+def ignore_errors(val = None):
+    global _ignore_errors
+    if val is not None:
+        _ignore_errors = val
     return _ignore_errors
 
 """ Bitlength for bitwise operations. Values are signed values between -2^(bitlength-1) and 2^(bitlength-1) """
@@ -145,7 +148,7 @@ def if_guard(fn):
 igprint = if_guard(print)
 
 """ Add constraint v*w=y to the constraint system, and update running computation hash. """
-def add_constraint(v,w,y):
+def add_constraint(v,w,y,check=True):
     if not guard is None:
         dummy = PrivVal(v.value*w.value-y.value)
         add_constraint_unsafe(v,w,y+dummy)
@@ -153,7 +156,7 @@ def add_constraint(v,w,y):
     else:
         if v.value*w.value!=y.value:
             # note that we do the check over the integers
-            if ignore_errors(): raise ValueError("constraint did not hold")
+            if check and not ignore_errors(): raise ValueError("constraint did not hold")
             
         add_constraint_unsafe(v,w,y)
 
@@ -458,7 +461,7 @@ class LinComb:
         else:
             raise ValueError(err if err is not None else "value " + str(self.value) + " is not zero")
         
-        add_constraint(self, wit, LinComb.ONE)
+        add_constraint(self, wit, LinComb.ONE, check=False)
     
 LinComb.ZERO = LinComb(0, backend.zero())
 LinComb.ONE = LinComb(1, backend.one())
