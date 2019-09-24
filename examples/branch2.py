@@ -1,7 +1,7 @@
 import sys
 
 import pysnark.runtime
-from pysnark.runtime import PrivVal, LinComb, add_guard, restore_guard
+from pysnark.runtime import PrivVal, LinComb, add_guard, restore_guard, igprint
 from pysnark.branching import BranchingValues, if_then_else, _if, _elif, _else, _endif, _range, _while, _endwhile, _endfor, _breakif
         
 _ = BranchingValues()
@@ -22,7 +22,7 @@ def test():
 _.y=3
 print("_.y", _.y)
 print("_.vals", _.vals)
-if _if(PrivVal(1)):
+if _if(PrivVal(0)):
     _.x = 3
     if _if(PrivVal(0)):
         _.z = 4
@@ -47,7 +47,7 @@ print("after if", _.vals)
 done = 0
 _.w=0
 while _while(done!=PrivVal(5)) and done!=10:
-    print("in while loop")
+    igprint("in while loop")
     _.w = done
     done += 1
     _breakif(done==3)
@@ -69,7 +69,7 @@ print("after a while", len(_.stack), _.wh, _.w)
 k = PrivVal(9)
 _.sum = 0
 for i in _range(k, max=9, checkstopmax=True):
-    print("in loop")
+    igprint("in loop")
     _breakif(i==3)
     _.sum = i
 _endfor()
@@ -80,7 +80,7 @@ print("sum", _.sum)
 
 print("nc", pysnark.runtime.num_constraints)
 for i in _range(10, max=10):
-    print("i")
+    igprint("i")
 _endfor()
 print("nc", pysnark.runtime.num_constraints)
 

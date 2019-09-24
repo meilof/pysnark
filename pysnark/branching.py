@@ -3,6 +3,8 @@
 import copy
 import inspect
 
+import pysnark.runtime
+
 from .runtime import guarded, is_base_value, PubVal, PrivVal, ignore_errors, is_base_value, LinComb, add_guard, restore_guard
     
 def if_then_else(cond, truev, falsev):
@@ -12,7 +14,7 @@ def if_then_else(cond, truev, falsev):
         if cond!=0 and cond!=1: 
             raise ValueError("not a boolean value: " + str(cond))
         return truev if cond else falsev
-    elif (not ignore_errors) and cond.value!=0 and cond.value!=1:
+    elif (not ignore_errors()) and cond.value!=0 and cond.value!=1:
         raise(ValueError("not a bit: " + str(cond)))
     else:
         if callable(truev): truev = guarded(cond)(truev)()
@@ -75,7 +77,7 @@ class BranchContext:
                 raise RuntimeError("branch set spurious value: " + nm)
         
     def enter(self, nwcond):
-        if not isinstance(nwcond,LinComb): nwcond = LinComb.ZERO+nwcond
+        #if not isinstance(nwcond,LinComb): nwcond = LinComb.ZERO+nwcond
         self.bak = self.ctx.backup()        
         self.cond = nwcond
         self.origguard = add_guard(nwcond)
@@ -196,7 +198,7 @@ class ObliviousIterator():
                 return self.ix
             else:
                 if self.checkstopmax:
-                    (self.ctx.stack[-1].cond&(self.ix!=self.stop)).assert_zero()
+                    (self.ctx.stack[-1].cond&(self.ix!=self.stop)).assert_zero("stop exceeds max")
                 raise StopIteration
 #        if self.ix==self.max:
             # make sure that ix was not >max

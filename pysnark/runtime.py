@@ -47,16 +47,19 @@ Operating principles:
        always hold and add_constraint otherwise)
      - otherwise, raise ValueError or AssertionError
 """
-ignore_errors=False
+_ignore_errors=False
+
+def ignore_errors():
+    return _ignore_errors
 
 """ Bitlength for bitwise operations. Values are signed values between -2^(bitlength-1) and 2^(bitlength-1) """
 bitlength=16
 
 def is_base_value(obj): return isinstance(obj, int)
 
-def assert_base_value(obj):
+def assert_base_value(obj, err=None):
     if not is_base_value(obj):
-        raise TypeError("value " + obj + " has unsupported type " + type(obj))
+        raise TypeError(err if err is not None else "value " + obj + " has unsupported type " + type(obj))
 
 num_constraints = 0
         
@@ -76,6 +79,7 @@ def benchmark(callback = lambda x: print("*** Num constraints:", x)):
     return _benchmark
 
 """
+Should be None or a LinComb with value 0 or 1
 If set, all constraints added via add_constraint will be guarded by this guard,
 meaning that if guard.value==1, they should be satfiesfied and if guard.value==0,
 a dummy value will be added to satisfy them
@@ -83,24 +87,32 @@ a dummy value will be added to satisfy them
 guard = None
 
 def add_guard(cond):
-    global guard, ignore_errors
+    global guard, _ignore_errors
 
     _orig_guard = guard
-    _orig_ignore_errors = ignore_errors
+    _orig_ignore_errors = _ignore_errors
     _orig_ONE = LinComb.ONE
     
-    guard = cond if guard is None else cond&guard
-    ignore_errors = ignore_errors or (cond.value==0)
-    LinComb.ONE = guard
-    
+    if isinstance(cond,LinComb):
+        if not ignore_errors() and (cond.value!=0 and cond.value!=1):
+            raise RuntimeError("incorrect guard value " + str(cond))
+        guard = cond if guard is None else guard&cond
+        _ignore_errors = _ignore_errors or cond.value==0
+        LinComb.ONE = guard        
+    elif is_base_value(cond):
+        if cond==0: raise RuntimeError("unreachable code")
+        if cond!=1: raise RuntimeError("incorrect guard value " + str(cond))
+    else:
+        raise TypeError("unexpected argument type for add_guard: " + str(cond))
+
     return (_orig_guard,_orig_ignore_errors,_orig_ONE)
 
 def restore_guard(bak):
-    global guard, ignore_errors
+    global guard, _ignore_errors
     
     (_orig_guard,_orig_ignore_errors,_orig_ONE)=bak
     guard = _orig_guard
-    ignore_errors = _orig_ignore_errors
+    _ignore_errors = _orig_ignore_errors
     LinComb.ONE = _orig_ONE    
 
 
@@ -121,8 +133,16 @@ def guarded(cond):
         return __guarded
     return _guarded
 
-def is_dummy():
-    return (guard is not None and guard.value==0)
+def is_guard():
+    return (guard is None or guard.value==1)
+
+def if_guard(fn):
+    def _if_guard(*args, **kwargs):
+        if is_guard():
+            return fn(*args, **kwargs)
+    return _if_guard
+
+igprint = if_guard(print)
 
 """ Add constraint v*w=y to the constraint system, and update running computation hash. """
 def add_constraint(v,w,y):
@@ -133,7 +153,7 @@ def add_constraint(v,w,y):
     else:
         if v.value*w.value!=y.value:
             # note that we do the check over the integers
-            if ignore_errors: raise ValueError("Constraint did not hold")
+            if ignore_errors(): raise ValueError("constraint did not hold")
             
         add_constraint_unsafe(v,w,y)
 
@@ -155,25 +175,25 @@ class LinComb:
     
     # self<other, so other-self>0, so other-self-1>=0
     def __lt__(self, other): return (other-self-1).check_positive()
-    def assert_lt(self, other): (other-self-1).assert_positive()
+    def assert_lt(self, other, err=None): (other-self-1).assert_positive(err)
         
     # self<=other, so other-self>=0
     def __le__(self, other): return (other-self).check_positive()
-    def assert_le(self, other): (other-self).assert_positive()
+    def assert_le(self, other, err=None): (other-self).assert_positive(err)
     
     def __eq__(self, other): return (self-other).check_zero()
-    def assert_eq(self, other): (self-other).assert_zero()
+    def assert_eq(self, other, err=None): (self-other).assert_zero(err)
         
     def __ne__(self, other): return 1-(self==other)
-    def assert_ne(self, other): (self-other).assert_nonzero()
+    def assert_ne(self, other, err=None): (self-other).assert_nonzero(err)
         
     # self>other, so self-other>0, so self-other-1>=0
     def __gt__(self, other): return (self-other-1).check_positive()
-    def assert_gt(self, other): (self-other-1).assert_positive()
+    def assert_gt(self, other, err=None): (self-other-1).assert_positive(err)
         
     # self>=other, so self-other>=0
     def __ge__(self, other): return (self-other).check_positive()
-    def assert_ge(self, other): (self-other).assert_positive()
+    def assert_ge(self, other, err=None): (self-other).assert_positive(err)
         
     def __bool__(self):
         raise NotImplementedError("Should not run bool() on a LinComb")
@@ -204,9 +224,9 @@ class LinComb:
     def __truediv__(self, other): 
         """ Proper division """
         if isinstance(other, LinComb):
-            if (not is_dummy()) and self.value % other.value == 0:
+            if (is_guard()) and self.value % other.value == 0:
                 res = PrivVal(self.value/other.value)
-            elif ignore_errors:
+            elif ignore_errors():
                 res = PrivVal(0)
             else:
                 raise ValueError(str(self.value) + " is not properly divisible by " + str(other.value))
@@ -269,7 +289,7 @@ class LinComb:
         return LinComb.from_bits(self.to_bits[other:])
     
     def _check_both_bits(self, other):
-        if ignore_errors: return
+        if ignore_errors(): return
         
         if self.value !=0 and self.value!=1: raise ValueError("not a bit: " + str(self.value))
             
@@ -305,9 +325,9 @@ class LinComb:
         """ Proper division by LinComb """
         if not is_base_value(other): return NotImplemented
         
-        if (not is_dummy()) and other % self.value == 0:
+        if (is_guard()) and other % self.value == 0:
             res = PrivVal(other/self.value)
-        elif ignore_errors:
+        elif ignore_errors():
             res = PrivVal(0)
         else:
             raise ValueError(str(other.value) + " is not properly divisible by " + str(self.value))
@@ -349,16 +369,22 @@ class LinComb:
     def __floor__(self): return NotImplemented
     def __ceil__(self): return NotImplemented
 
-    def assert_bool(self):
+    def assert_bool(self, err=None):
+        if (not ignore_errors()) and (self.value!=0 and self.value!=1):
+            raise ValueEror(err if err is not None else "expected bool, got " + str(self.value))
+        
         add_constraint(self, 1-self, LinComb.ZERO)
 
-    def assert_bool_unsafe(self):
+    def assert_bool_unsafe(self, err=None):
+        if (not ignore_errors()) and (self.value!=0 and self.value!=1):
+            raise ValueEror(err if err is not None else "expected bool, got " + str(self.value))
+        
         add_constraint_unsafe(self, LinComb.ONE_SAFE-self, LinComb.ZERO)
         
     def to_bits(self, bits=None):
         if bits is None: bits=bitlength
             
-        if (not ignore_errors) and (self.value<0 or self.value.bit_length()>bits):
+        if (not ignore_errors()) and (self.value<0 or self.value.bit_length()>bits):
             raise ValueError("value " + str(self.value) + " is not a " + str(bits) + "-bit positive integer")
             
         bits = [PrivVal((self.value&(1<<ix))>>ix) for ix in range(bits)]
@@ -380,11 +406,11 @@ class LinComb:
     def check_positive(self, bits=None):
         if bits is None: bits=bitlength
             
-        if (not is_dummy()) and self.value.bit_length()<=bits:
+        if (is_guard()) and self.value.bit_length()<=bits:
             ret = PrivVal(1 if self.value>=0 else 0)
             abs = self.value if self.value>=0 else -self.value
             bits = [PrivVal((abs&(1<<ix))>>ix) for ix in range(bits)]
-        elif ignore_errors:
+        elif ignore_errors():
             ret = PrivVal(0)
             bits = [PrivVal(0) for _ in range(bits)]
         else:
@@ -398,8 +424,12 @@ class LinComb:
         
         return ret
             
-    def assert_positive(self, bits=None):
+    def assert_positive(self, bits=None, err=None):
         if bits is None: bits=bitlength
+            
+        if (not ignore_errors()) and (self.value<0 or self.value.bit_length()>bits):
+            raise ValueError(err if err is not None else "value " + str(self.value) + " is not a " + str(bits) + "-bit positive integer")
+
         self.to_bits(bits)
         
     def check_zero(self):
@@ -414,19 +444,19 @@ class LinComb:
         
         return ret
     
-    def assert_zero(self):
-        if (not ignore_errors) and self.value!=0:
-            raise ValueError("Value " + str(self.value) + " is not zero")
+    def assert_zero(self, err=None):
+        if (not ignore_errors()) and self.value!=0:
+            raise ValueError(err if err is not None else "value " + str(self.value) + " is not zero")
             
         add_constraint(LinComb.ZERO, LinComb.ZERO, self)        
             
-    def assert_nonzero(self):
-        if (not is_dummy()) and self.value!=0:
+    def assert_nonzero(self, err=None):
+        if (is_guard()) and self.value!=0:
             wit = PrivVal(backend.fieldinverse(self.value))    
-        elif ignore_errors:
+        elif ignore_errors():
             wit = PrivVal(0)
         else:
-            raise ValueError("Value " + str(self.value) + " is not zero")
+            raise ValueError(err if err is not None else "value " + str(self.value) + " is not zero")
         
         add_constraint(self, wit, LinComb.ONE)
     

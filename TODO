@@ -19,6 +19,8 @@
 * does making a source distribution work?
 * windows cross-compiling?
 * benchmarking: @guarded_and_unguarded
+   - multivariate regression as recursive linear regression, BenchmarkResult
+     with __add__, __mul__, __sub__
 * libsnark: automatically load key given by hash?
 * energy saving branches
    - bits: use 0 (and other ValueError computations)
