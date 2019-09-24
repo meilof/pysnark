@@ -30,16 +30,7 @@ def get_modulus():
     return libsnark.get_modulus()
 
 def add_constraint(v, w, y):
-    #global comphash
-    
     pb.add_r1cs_constraint(libsnark.r1cs_constraint(v,w,y))
-    
-    #if v.value*w.value!=y.value: raise ValueError()
-    #TODO: check, add to hash
-    #comphash = hash((comphash,tuple(v.sig),tuple(w.sig),tuple(y.sig)))
-    #if not libsnark.check_mul(v.value, w.value, y.value):
-    #    raise ValueError()
-    #    needed?
     
 def prove():
     if pb.num_constraints()==0:
@@ -68,10 +59,6 @@ def prove():
     verified=libsnark.r1cs_ppzksnark_verifier_strong_IC(keypair.vk, pubvals, proof);
     
     print("*** Public inputs: " + " ".join([str(pubvals.at(i)) for i in range(pubvals.size())]))
-
-    #cerr << "*** Public inputs:";
-    #for (auto &v: pubvals) cerr << " " << v;
-    #cerr << endl;
     print("*** Verification status:", verified)
     
     
