@@ -1,9 +1,9 @@
-* energy-saving?
-   - get rid of it? it makes stuff much more complicated, not clear whether
-     it actually saves something
-   - if we do it, can also change PrivVal(..) etc -> but then we would need
-     another PrivVal_safe() as well
-   - do some benchmarking
+* Energy-saving
+   - has a small effect on performance, but not that much: cf
+       examples meilof$ time python3 manysquares.py 100000 0
+       examples meilof$ time python3 manysquares.py 100000 100
+   - remove it? produces counter-intuitive results...
+   - or check why it does not help that much
 * if not isinstance(nwcond,LinComb): nwcond = LinComb.ZERO+nwcond
   does that cost efficiency?
 * dealing with huge values, e.g., compute 2^10000 gives segfault

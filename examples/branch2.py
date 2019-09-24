@@ -143,3 +143,22 @@ print("a is", _.a)
 #        pass
 #    
 #    return freturns    
+
+
+print("nc", pysnark.runtime.num_constraints)
+
+_.a = PrivVal(0)
+for i in range(10):
+    _.a+=1
+
+print("nc", pysnark.runtime.num_constraints)
+
+_.a = PrivVal(0)
+stop = PrivVal(4)
+for i in _range(10):
+    _.a+=1
+    #_breakif(i==stop)
+_endfor()
+
+print("nc", pysnark.runtime.num_constraints)
+
