@@ -49,10 +49,11 @@ def run(bname):
     bcomm = options.get_block_comm(bname)
 
     mpkey = options.get_mpkey_file()
-    print("Building block commitment", bcomm, "from wires", bfile, file=sys.stderr)
+    print("*** building block commitment", bcomm, "from wires", bfile, file=sys.stderr)
 
     blockcomm = open(bcomm, "w")
-    ret = subprocess.call([options.get_qaptool_exe("qapinput"), mpkey, bfile], stdout=blockcomm)
+    outs = None if options.qaptools_debug() else subprocess.DEVNULL
+    ret = subprocess.call([options.get_qaptool_exe("qapinput"), mpkey, bfile], stdout=blockcomm, stderr=outs)
     blockcomm.close()
     if ret != 0:
         sys.exit(2)

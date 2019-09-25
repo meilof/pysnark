@@ -154,7 +154,7 @@ def prove():
     
     sz = 1<<((max([max(qaplens.values()),blklen,extlen])-1).bit_length())
     pubsz = 1<<((extlen-1).bit_length()) if extlen is not None else 0
-    print("qaplen:", max(qaplens.values()), "blklen:", blklen, "extlen:", extlen, "sz", sz, "pubsz", pubsz)
+    #print("qaplen:", max(qaplens.values()), "blklen:", blklen, "extlen:", extlen, "sz", sz, "pubsz", pubsz)
 
     cursz, curpubsz = runqapgen.ensure_mkey(sz, pubsz)
 
@@ -170,20 +170,20 @@ def prove():
 
     if os.path.isfile(options.get_mpkey_file()) and all([os.path.isfile(vk) for vk in vks]):
         vercom = runqapver.run()
-        print("Verification succeeded", file=sys.stderr)
+        print("*** verification succeeded", file=sys.stderr)
     else:
         vercom = runqapver.getcommand()
-        print("Verification keys missing, skipping verification", file=sys.stderr)
+        print("*** verification keys missing, skipping verification", file=sys.stderr)
 
-    print("  prover keys/eqs: ", options.get_mkey_file(), " ".join(eks), " ".join(eqs), options.get_schedule_file(), file=sys.stderr)
-    print("  prover data:     ", " ".join(wrs), file=sys.stderr)
-    print("  verifier keys:   ", options.get_mpkey_file(), " ".join(vks), options.get_schedule_file(), file=sys.stderr)
-    print("  verifier data:   ", " ".join(cms), options.get_proof_file(), options.get_io_file(), file=sys.stderr)
-    print("  verifier cmd:    ", vercom, file=sys.stderr)
+    print("***  prover keys/eqs: ", options.get_mkey_file(), " ".join(eks), " ".join(eqs), options.get_schedule_file(), file=sys.stderr)
+    print("***  prover data:     ", " ".join(wrs), file=sys.stderr)
+    print("***  verifier keys:   ", options.get_mpkey_file(), " ".join(vks), options.get_schedule_file(), file=sys.stderr)
+    print("***  verifier data:   ", " ".join(cms), options.get_proof_file(), options.get_io_file(), file=sys.stderr)
+    print("***  verifier cmd:    ", vercom, file=sys.stderr)
     if cursz>sz or curpubsz>pubsz:
-        print("** Evaluation/public keys larger than needed for function: " +\
+        print("*** Evaluation/public keys larger than needed for function: " +\
                             str(cursz)+">"+str(sz) + " or " + str(curpubsz)+">"+str(pubsz)+ ".", file=sys.stderr)
-        print("** To re-create, remove " + options.get_mkey_file() + " and " +\
+        print("*** To re-create, remove " + options.get_mkey_file() + " and " +\
                             options.get_mpkey_file() + " and run again.", file=sys.stderr)
 
     #print >>sys.stderr, "  key material + proof material:"

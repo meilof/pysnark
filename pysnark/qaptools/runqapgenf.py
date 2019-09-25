@@ -30,7 +30,7 @@ import os.path
 import subprocess
 import sys
 
-import pysnark.qaptools.options as psopt
+from . import options
 
 def get_ekfile_sig(ekfile):
     """
@@ -57,13 +57,16 @@ def run(nm, sig, sz=None):
     :param sz: If None, use the master secret key; else, use the coefficient cache of the given size
     :return: None
     """
-    if subprocess.call([psopt.get_qaptool_exe("qapgenf"),
-                        psopt.get_mkey_file(),
-                        psopt.get_mskey_file() if sz is None else psopt.get_cache_file(sz),
-                        psopt.get_eqs_file_fn(nm),
-                        psopt.get_ek_file(nm),
-                        psopt.get_vk_file(nm),
-                        sig]) != 0:
+    
+    outs = None if options.qaptools_debug() else subprocess.DEVNULL
+
+    if subprocess.call([options.get_qaptool_exe("qapgenf"),
+                        options.get_mkey_file(),
+                        options.get_mskey_file() if sz is None else options.get_cache_file(sz),
+                        options.get_eqs_file_fn(nm),
+                        options.get_ek_file(nm),
+                        options.get_vk_file(nm),
+                        sig], stdout=outs, stderr=outs) != 0:
         sys.exit(2)
 
 
@@ -78,19 +81,20 @@ def ensure_ek(nm, sig, eksz):
     :return: None
     """
 
-    if get_ekfile_sig(psopt.get_ek_file(nm)) == sig:
+    if get_ekfile_sig(options.get_ek_file(nm)) == sig:
         return
 
-    print("New signature for function " + str(nm) + ", rebuilding keys", file=sys.stderr)
+    print("*** new signature for function " + str(nm) + ", rebuilding keys", file=sys.stderr)
 
-    if os.path.isfile(psopt.get_mskey_file()):
+    if os.path.isfile(options.get_mskey_file()):
         run(nm, sig, None)
     else:
-        cachefile = psopt.get_cache_file(eksz)
+        cachefile = options.get_cache_file(eksz)
         if not os.path.isfile(cachefile):
-            print("*** Generating coefficient cache without master secret key: this may be slow...", file=sys.stderr)
+            print("*** generating coefficient cache without master secret key: this may be slow...", file=sys.stderr)
             outf = open(cachefile, "w")
-            ret = subprocess.call([psopt.get_qaptool_exe("qapcoeffcache"), psopt.get_mkey_file(), str(eksz)], stdout=outf)
+            outs = None if options.qaptools_debug() else subprocess.DEVNULL
+            ret = subprocess.call([options.get_qaptool_exe("qapcoeffcache"), options.get_mkey_file(), str(eksz)], stdout=outf, stderr=outs)
             outf.close()
             if ret != 0: sys.exit(2)
 

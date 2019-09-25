@@ -49,9 +49,10 @@ def run(eksize, pksize, genmk=False):
     if not genmk and not os.path.isfile(mskfile):
         raise IOError("Could not enlarge master key materiak: master secret key missing")
 
-    print("*** " + ("Generating" if genmk else "Enlarging") + " master key material", file=sys.stderr)
+    print("*** " + ("generating" if genmk else "enlarging") + " master key material", file=sys.stderr)
+    outs = None if options.qaptools_debug() else subprocess.DEVNULL
     if subprocess.call([options.get_qaptool_exe("qapgen"), str(max(pksize,eksize,0)), str(max(pksize,0)),
-                        mskfile, mkeyfile, mpkeyfile]) != 0:
+                        mskfile, mkeyfile, mpkeyfile], stdout=outs, stderr=outs) != 0:
         sys.exit(2)
 
 

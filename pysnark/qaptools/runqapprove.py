@@ -29,7 +29,7 @@
 import subprocess
 import sys
 
-import pysnark.qaptools.options as psopt
+from . import options
 
 def run():
     """
@@ -37,8 +37,9 @@ def run():
 
     :return: None
     """
-    outf = open(psopt.get_proof_file(), "w")
-    ret = subprocess.call([psopt.get_qaptool_exe("qapprove"), psopt.get_mkey_file(), psopt.get_wire_file(),
-                           psopt.get_io_file(), psopt.get_schedule_file()], stdout=outf)
+    outf = open(options.get_proof_file(), "w")
+    outs = None if options.qaptools_debug() else subprocess.DEVNULL
+    ret = subprocess.call([options.get_qaptool_exe("qapprove"), options.get_mkey_file(), options.get_wire_file(),
+                           options.get_io_file(), options.get_schedule_file()], stdout=outf, stderr=outs)
     outf.close()
     if ret!=0: sys.exit(2)

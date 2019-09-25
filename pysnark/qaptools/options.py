@@ -39,6 +39,9 @@ qaptoolsdir = os.environ["QAPTOOLS_BIN"] if "QAPTOOLS_BIN" in os.environ else qa
 
 exefix = '.exe' if os.name == 'nt' else ''
 
+def qaptools_debug():
+    return "QAPTOOLS_DEBUG" in os.environ and os.environ["QAPTOOLS_DEBUG"]=="1"
+
 def get_qaptool_exe(tool): return os.path.join(qaptoolsdir, tool+exefix)
 def get_block_comm(bname): return os.path.join(datadir, "pysnark_comm_" + bname)
 def get_block_file(bname): return os.path.join(datadir, "pysnark_wires_" + bname)

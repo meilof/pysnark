@@ -99,11 +99,14 @@ def qapsplit():
 
 
     hexs = dict()
+    
+    print("*** qaptools subroutines:", file=sys.stderr)
         
     for x in fns:
         q = getqap(x)
         hs = hex(abs(hash(str(q))))[2:]
-        print("  ", x, fns[x], hs, len(eqs[x]), end=' ')
+        
+        print("***    id:", x, "function:", fns[x], "digest:", hs, "#constraints:", len(eqs[x]), end=' ', file=sys.stderr)
         if fns[x] in hexs and hexs[fns[x]]!=hs:
             raise ValueError("*** Inconsistent functions: " + fns[x]+"."+hs + "<->" + fns[x]+"."+hexs[fns[x]])
         if not fns[x] in hexs:
@@ -111,9 +114,9 @@ def qapsplit():
             print("\n".join(q+[]), file=outf)
             outf.close()
             hexs[fns[x]]=hs
-            print("*")
+            print("*", file=sys.stderr)
         else:
-            print(".")
+            print(".", file=sys.stderr)
 
     def maxperqap(nm):
         try:

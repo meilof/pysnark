@@ -7,3 +7,4 @@ diffs
 build.sh
 depends/qaptools/build/
 examples/pysnark_*
+examples/out

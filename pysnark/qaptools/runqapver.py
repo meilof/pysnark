@@ -29,7 +29,7 @@
 import subprocess
 import sys
 
-import pysnark.qaptools.options as psopt
+from . import options
 
 def getcommand():
     """
@@ -37,8 +37,8 @@ def getcommand():
 
     :return: Command line
     """
-    vercom = [psopt.get_qaptool_exe("qapver"), psopt.get_mpkey_file(), psopt.get_schedule_file(),
-              psopt.get_proof_file(), psopt.get_io_file()]
+    vercom = [options.get_qaptool_exe("qapver"), options.get_mpkey_file(), options.get_schedule_file(),
+              options.get_proof_file(), options.get_io_file()]
     return " ".join(vercom)
 
 
@@ -48,9 +48,10 @@ def run():
 
     :return: The command line to the "qapver" tool
     """
-    vercom = [psopt.get_qaptool_exe("qapver"), psopt.get_mpkey_file(), psopt.get_schedule_file(),
-              psopt.get_proof_file(), psopt.get_io_file()]
-    if subprocess.call(vercom) != 0:
+    vercom = [options.get_qaptool_exe("qapver"), options.get_mpkey_file(), options.get_schedule_file(),
+              options.get_proof_file(), options.get_io_file()]
+    outs = None if options.qaptools_debug() else subprocess.DEVNULL
+    if subprocess.call(vercom, stdout=outs, stderr=outs) != 0:
         sys.exit(2)
 
     return " ".join(vercom)

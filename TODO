@@ -1,3 +1,4 @@
+* qaptools: fix "always rebuilding" issue
 * port smart contracts
 * Energy-saving
    - has a small effect on performance, but not that much: cf
