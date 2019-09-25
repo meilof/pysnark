@@ -1,3 +1,5 @@
+# Copyright (C) Meilof Veeningen, 2019
+
 def scalar_mul(a, b):
     return [a*bi for bi in b]
 

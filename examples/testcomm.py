@@ -41,6 +41,5 @@ def cube(val):
 
 gencomm("test", [1,2])
 vals = importcomm("test")
-ret=vals[0]*vals[0]
 exportcomm([cube(vals[0]) * square(vals[1])], "out")
 print("Finished")

@@ -374,13 +374,13 @@ class LinComb:
 
     def assert_bool(self, err=None):
         if (not ignore_errors()) and (self.value!=0 and self.value!=1):
-            raise ValueEror(err if err is not None else "expected bool, got " + str(self.value))
+            raise ValueError(err if err is not None else "expected bool, got " + str(self.value))
         
         add_constraint(self, 1-self, LinComb.ZERO)
 
     def assert_bool_unsafe(self, err=None):
         if (not ignore_errors()) and (self.value!=0 and self.value!=1):
-            raise ValueEror(err if err is not None else "expected bool, got " + str(self.value))
+            raise ValueError(err if err is not None else "expected bool, got " + str(self.value))
         
         add_constraint_unsafe(self, LinComb.ONE_SAFE-self, LinComb.ZERO)
         

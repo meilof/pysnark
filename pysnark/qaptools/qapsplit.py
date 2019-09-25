@@ -122,9 +122,9 @@ def qapsplit():
             return 0
 
     def ioperqap(nm):
-        #print("ioperqap for ", nm, blocks[nm])
+        #print("ioperqap for ", nm, blocks[nm])  if (nm, blk[0]) in extblocks]
         try:
-            return sum([len(blk[1]) for blk in blocks[nm] if (nm, blk[0]) in extblocks])
+            return sum([len(blk[1]) for blk in blocks[nm]])
         except ValueError:
             return 0
 

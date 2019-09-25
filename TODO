@@ -1,3 +1,4 @@
+* port smart contracts
 * Energy-saving
    - has a small effect on performance, but not that much: cf
        examples meilof$ time python3 manysquares.py 100000 0
@@ -27,7 +28,6 @@
    - assert hashes unequal to each other
 * make inhibit_profiling configurable
 * rename / operator because it's too dangerous
-* make ggh hashing more transparent: one function, conditonal % inside
 * check where .value is used: can we avoid all use outside of runtime?
 
 * jupyter, mybinder.org, https://aws.amazon.com/getting-started/projects/build-serverless-web-app-lambda-apigateway-s3-dynamodb-cognito/

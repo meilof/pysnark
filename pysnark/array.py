@@ -28,7 +28,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from .runtime import PrivVal, LinComb, is_base_value
+from .runtime import PrivVal, LinComb, is_base_value, ignore_errors
 
 from .branching import if_then_else
 from .linalg import lin_comb
@@ -48,7 +48,7 @@ class Array:
         if isinstance(item, int):
             return self.arr[item]
         elif isinstance(item, LinComb):
-            if item.value < 0 or item.value >= len(self.arr):
+            if (not ignore_errors()) and (item.value < 0 or item.value >= len(self.arr)):
                 raise IndexError(str(item.value)+"<0 or "+str(item.value)+">="+str(len(self.arr)))
             ixs = [item==ix for ix in range(len(self.arr))]
             sum(ixs).assert_eq(1)
@@ -65,7 +65,7 @@ class Array:
         if isinstance(item, int):
             self.arr[item] = value
         elif isinstance(item, LinComb):
-            if item.value < 0 or item.value >= len(self.arr):
+            if (not ignore_errors()) and (item.value < 0 or item.value >= len(self.arr)):
                 raise IndexError(str(item.value)+"<0 or "+str(item.value)+">="+str(len(self.arr)))
             ixs = [item==ix for ix in range(len(self.arr))]
             sum(ixs).assert_eq(1)
@@ -102,6 +102,11 @@ class Array:
         return NotImplemented
     
     __mul__=__rmul__
+    
+    def __if_then_else__(self, other, cond):
+        if not isinstance(other, Array):
+            raise TypeError("expected Array, got " + str(other))
+        return other+cond*(self-other)
     
     def assert_eq(self, other):
         if len(self.arr)!=len(other.arr):
