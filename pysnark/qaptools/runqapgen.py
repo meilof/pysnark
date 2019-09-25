@@ -53,7 +53,7 @@ def run(eksize, pksize, genmk=False):
     outs = None if options.qaptools_debug() else subprocess.DEVNULL
     if subprocess.call([options.get_qaptool_exe("qapgen"), str(max(pksize,eksize,0)), str(max(pksize,0)),
                         mskfile, mkeyfile, mpkeyfile], stdout=outs, stderr=outs) != 0:
-        sys.exit(2)
+        raise RuntimeError("qapgen failed")
 
 
 def get_mekey_size():

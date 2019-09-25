@@ -96,6 +96,6 @@ def ensure_ek(nm, sig, eksz):
             outs = None if options.qaptools_debug() else subprocess.DEVNULL
             ret = subprocess.call([options.get_qaptool_exe("qapcoeffcache"), options.get_mkey_file(), str(eksz)], stdout=outf, stderr=outs)
             outf.close()
-            if ret != 0: sys.exit(2)
+            if ret != 0: raise RuntimeError("qapcoeffcache failed")
 
         run(nm, sig, eksz)

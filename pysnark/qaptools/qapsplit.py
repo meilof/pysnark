@@ -26,6 +26,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+import hashlib
 import sys
 
 import pysnark.qaptools.options
@@ -59,6 +60,12 @@ def getqap(nm):
 
     return sorted(list(map(bstr, blocks[nm])) + list(map(eqstr, eqs[nm])))
 
+
+def qaphash(q):
+    m = hashlib.md5()
+    for line in q:
+        m.update(bytes(line, 'utf-8'))
+    return m.hexdigest()[:10]
 
 def qapsplit():
     """
@@ -104,7 +111,7 @@ def qapsplit():
         
     for x in fns:
         q = getqap(x)
-        hs = hex(abs(hash(str(q))))[2:]
+        hs = qaphash(q)
         
         print("***    id:", x, "function:", fns[x], "digest:", hs, "#constraints:", len(eqs[x]), end=' ', file=sys.stderr)
         if fns[x] in hexs and hexs[fns[x]]!=hs:

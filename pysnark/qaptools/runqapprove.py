@@ -42,4 +42,4 @@ def run():
     ret = subprocess.call([options.get_qaptool_exe("qapprove"), options.get_mkey_file(), options.get_wire_file(),
                            options.get_io_file(), options.get_schedule_file()], stdout=outf, stderr=outs)
     outf.close()
-    if ret!=0: sys.exit(2)
+    if ret!=0: raise RuntimeError("qapprove failed")

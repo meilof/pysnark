@@ -52,7 +52,7 @@ def run():
               options.get_proof_file(), options.get_io_file()]
     outs = None if options.qaptools_debug() else subprocess.DEVNULL
     if subprocess.call(vercom, stdout=outs, stderr=outs) != 0:
-        sys.exit(2)
+        raise RuntimeError("qapver failed")
 
     return " ".join(vercom)
 

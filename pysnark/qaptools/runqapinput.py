@@ -56,7 +56,7 @@ def run(bname):
     ret = subprocess.call([options.get_qaptool_exe("qapinput"), mpkey, bfile], stdout=blockcomm, stderr=outs)
     blockcomm.close()
     if ret != 0:
-        sys.exit(2)
+        raise RuntimeError("qapinput failed")
 
 
 def writecomm(blocknm, vals, rnd=None):

@@ -146,49 +146,52 @@ def add_constraint(v, w, y):
     
 @inited
 def prove():
-    qaplens,blklen,extlen,sigs = qapsplit.qapsplit()
-    
-    #print("qaplens", qaplens, "blklen", blklen, "extlen", extlen, "sigs", sigs)
-    if extlen is None: extlen = 0
-    if blklen is None: blklen = 0
-    
-    sz = 1<<((max([max(qaplens.values()),blklen,extlen])-1).bit_length())
-    pubsz = 1<<((extlen-1).bit_length()) if extlen is not None else 0
-    #print("qaplen:", max(qaplens.values()), "blklen:", blklen, "extlen:", extlen, "sz", sz, "pubsz", pubsz)
+    try:
+        qaplens,blklen,extlen,sigs = qapsplit.qapsplit()
 
-    cursz, curpubsz = runqapgen.ensure_mkey(sz, pubsz)
+        #print("qaplens", qaplens, "blklen", blklen, "extlen", extlen, "sigs", sigs)
+        if extlen is None: extlen = 0
+        if blklen is None: blklen = 0
 
-    for nm in list(sigs.keys()):
-        runqapgenf.ensure_ek(nm, sigs[nm], 1<<((qaplens[nm]-1).bit_length()))
+        sz = 1<<((max([max(qaplens.values()),blklen,extlen])-1).bit_length())
+        pubsz = 1<<((extlen-1).bit_length()) if extlen is not None else 0
+        #print("qaplen:", max(qaplens.values()), "blklen:", blklen, "extlen:", extlen, "sz", sz, "pubsz", pubsz)
 
-    runqapprove.run()
+        cursz, curpubsz = runqapgen.ensure_mkey(sz, pubsz)
 
-    allfs = list(schedule.oftype("function"))
-    (eqs,eks,vks) = list(map(set,list(zip(*[(fn[1], fn[2], fn[3]) for fn in allfs])))) if allfs!=[] else (set(),set(), set())
-    alles = list(schedule.oftype("external"))
-    (wrs,cms) = list(map(set,list(zip(*[(fn[2], fn[3]) for fn in alles])))) if alles!=[] else (set(),set())
+        for nm in list(sigs.keys()):
+            runqapgenf.ensure_ek(nm, sigs[nm], 1<<((qaplens[nm]-1).bit_length()))
 
-    if os.path.isfile(options.get_mpkey_file()) and all([os.path.isfile(vk) for vk in vks]):
-        vercom = runqapver.run()
-        print("*** verification succeeded", file=sys.stderr)
-    else:
-        vercom = runqapver.getcommand()
-        print("*** verification keys missing, skipping verification", file=sys.stderr)
+        runqapprove.run()
 
-    print("***  prover keys/eqs: ", options.get_mkey_file(), " ".join(eks), " ".join(eqs), options.get_schedule_file(), file=sys.stderr)
-    print("***  prover data:     ", " ".join(wrs), file=sys.stderr)
-    print("***  verifier keys:   ", options.get_mpkey_file(), " ".join(vks), options.get_schedule_file(), file=sys.stderr)
-    print("***  verifier data:   ", " ".join(cms), options.get_proof_file(), options.get_io_file(), file=sys.stderr)
-    print("***  verifier cmd:    ", vercom, file=sys.stderr)
-    if cursz>sz or curpubsz>pubsz:
-        print("*** Evaluation/public keys larger than needed for function: " +\
-                            str(cursz)+">"+str(sz) + " or " + str(curpubsz)+">"+str(pubsz)+ ".", file=sys.stderr)
-        print("*** To re-create, remove " + options.get_mkey_file() + " and " +\
-                            options.get_mpkey_file() + " and run again.", file=sys.stderr)
+        allfs = list(schedule.oftype("function"))
+        (eqs,eks,vks) = list(map(set,list(zip(*[(fn[1], fn[2], fn[3]) for fn in allfs])))) if allfs!=[] else (set(),set(), set())
+        alles = list(schedule.oftype("external"))
+        (wrs,cms) = list(map(set,list(zip(*[(fn[2], fn[3]) for fn in alles])))) if alles!=[] else (set(),set())
 
-    #print >>sys.stderr, "  key material + proof material:"
-    #print >>sys.stderr, " ", options.get_mpkey_file(), vks,\
-    #                    options.get_schedule_file(), , bcs
+        if os.path.isfile(options.get_mpkey_file()) and all([os.path.isfile(vk) for vk in vks]):
+            vercom = runqapver.run()
+            print("*** verification succeeded", file=sys.stderr)
+        else:
+            vercom = runqapver.getcommand()
+            print("*** verification keys missing, skipping verification", file=sys.stderr)
+
+        print("***  prover keys/eqs: ", options.get_mkey_file(), " ".join(eks), " ".join(eqs), options.get_schedule_file(), file=sys.stderr)
+        print("***  prover data:     ", " ".join(wrs), file=sys.stderr)
+        print("***  verifier keys:   ", options.get_mpkey_file(), " ".join(vks), options.get_schedule_file(), file=sys.stderr)
+        print("***  verifier data:   ", " ".join(cms), options.get_proof_file(), options.get_io_file(), file=sys.stderr)
+        print("***  verifier cmd:    ", vercom, file=sys.stderr)
+        if cursz>sz or curpubsz>pubsz:
+            print("*** Evaluation/public keys larger than needed for function: " +\
+                                str(cursz)+">"+str(sz) + " or " + str(curpubsz)+">"+str(pubsz)+ ".", file=sys.stderr)
+            print("*** To re-create, remove " + options.get_mkey_file() + " and " +\
+                                options.get_mpkey_file() + " and run again.", file=sys.stderr)
+
+        #print >>sys.stderr, "  key material + proof material:"
+        #print >>sys.stderr, " ", options.get_mpkey_file(), vks,\
+        #                    options.get_schedule_file(), , bcs
+    except RuntimeError as rr:
+        print("*** Error in qaptools: " + str(rr), file=sys.stderr)
 
 @inited
 def printwire(sh, nm):
