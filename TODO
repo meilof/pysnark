@@ -1,7 +1,8 @@
-* cross compiling
 * documenteren
 * port smart contracts
 * source release
+* setup.py: detect which depends/ are available, also allow to use exes, even .exe windows...
+  also: put in version
 
 * Energy-saving
    - has a small effect on performance, but not that much: cf

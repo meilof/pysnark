@@ -1,0 +1,3 @@
+recursive-include depends/qaptools *
+recursive-include depends/python-libsnark *
+include LICENSE.md

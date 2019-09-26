@@ -87,6 +87,7 @@ class CMakeBuild(build_ext):
             cmake_args += cmake_cmd_args
                 
             subprocess.check_call(['cmake', ext.cmake_lists_dir] + cmake_args, cwd=tempdir)
+            #subprocess.check_call(['make', 'VERBOSE=1'], cwd=tempdir)
             subprocess.check_call(['cmake', '--build', '.'], cwd=tempdir)
 
 if disable_qaptools and disable_libsnark:  
