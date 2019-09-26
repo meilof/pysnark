@@ -1,4 +1,8 @@
+* cross compiling
+* documenteren
 * port smart contracts
+* source release
+
 * Energy-saving
    - has a small effect on performance, but not that much: cf
        examples meilof$ time python3 manysquares.py 100000 0
