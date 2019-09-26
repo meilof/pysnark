@@ -4,10 +4,12 @@
 # and https://github.com/m-pilia/disptools/blob/master/python_c_extension/CMakeLists.txt
 
 import os
+import os.path
 import shutil
 import subprocess
 import sys
 
+import setuptools.command.egg_info
 from setuptools import setup, Extension
 from setuptools.command.build_ext import build_ext
 
@@ -23,6 +25,9 @@ disable_libsnark = False
 if "--disable-libsnark" in sys.argv:
     disable_libsnark = True
     sys.argv.remove("--disable-libsnark")
+if not os.path.isfile("depends/python-libsnark/CMakeLists.txt"):
+    print("*** depends/python-libsnark/CMakeLists.txt not found, disabling libsnark backend")
+    disable_libsnark = True
 
 disable_qaptools = False
 if "--disable-qaptools" in sys.argv:
@@ -35,6 +40,29 @@ for i in sys.argv:
         qaptools_bin = i[15:]
         sys.argv.remove(i)
         break
+        
+if qaptools_bin is None and os.path.isfile("qaptools/qapgen" + (".exe" if os.name=="nt" else "")):
+    print("*** Using detected qaptools in qaptools/")
+    qaptools_bin="qaptools"
+    
+if qaptools_bin is None and not os.path.isfile("depends/qaptools/CMakeLists.txt"):
+    print("*** depends/qaptools/CMakeLists.txt not found, disabling libsnark backend")
+    disable_qaptools = True
+    
+# write manifest
+print("writing MANIFEST.in")
+mfest = open("MANIFEST.in", "w")
+print("recursive-include examples *.py", file=mfest)
+print("include examples/binarycircuit_example.txt", file=mfest)
+if not disable_qaptools:
+    if qaptools_bin:
+        print("recursive-include", qaptools_bin, "*", file=mfest)
+    else:
+        print("recursive-include depends/qaptools *", file=mfest)
+if not disable_libsnark: print("recursive-include depends/python-libsnark *", file=mfest)
+print("include LICENSE.md", file=mfest)
+mfest.close()
+
         
 def use_qaptools_bins(target):
     apps = ['qapgen', 'qapgenf', 'qapinput', 'qapcoeffcache', 'qapprove', 'qapver']
@@ -97,7 +125,7 @@ else:
 
 
 setup(name='PySNARK',
-      version='0.2',
+      version='0.2' + ('-nols' if disable_libsnark else '') + ('-noqt' if disable_qaptools else ''),
       description='Python zk-SNARK execution environment',
       author='Meilof Veeningen',
       author_email='meilof@gmail.com',
