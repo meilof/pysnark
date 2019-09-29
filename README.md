@@ -27,34 +27,33 @@ PySNARK is experimental and **not fit for production environment**.
 
 PySNARK requires Python 3.*.
 
-### Requirements for libsnark backend
+### Windows
 
-The libsnark module requires SWIG, a C++ compiler, Python3 header files, CMake, and the GNU MP library. See [here](https://github.com/scipr-lab/libsnark) for details. On Linux, the following has been found to work to satisfy the requirements:
-
-```
-sudo apt-get install pkg-config build-essential cmake git libgmp3-dev libprocps-dev python-markdown libboost-all-dev libssl-dev
-```
-
-### Requirements for qaptools backend
-
-To compile the qaptools backend, a C++ compiler is needed. For Windows, qaptools binaries can be downloaded [here](https://github.com/Charterhouse/qaptools).
-
-### Building
-
-Download PySNARK including submodules:
-
-```
-git clone --recursive https://github.com/meilof/pysnark.git
-```
-
-Build and install PySNARK (assuming `python` is Python 3):
+Download a Win64 release from [here](https://github.com/meilof/pysnark/releases) and run the following from its main folder:
 
 ```
 python setup.py install
 ```
 
-To disable the qaptools backend, use `--disable-qaptools`. To disable the libsnark backend, use `--disable-libsnark`. To specify locations of precompiled qaptools binaries (e.g., for Windows), use `--qaptools=bin=<dir>`. Any CMake arguments (`-D...`), for example, for libsnark, can be given direcly on the above command line. For example, on Mac OS X I use `python3 setup.py install -DCMAKE_PREFIX_PATH=/usr/local/Cellar/openssl/1.0.2t -DCMAKE_SHARED_LINKER_FLAGS=-L/usr/local/Cellar/openssl/1.0.2t/lib -DWITH_PROCPS=OFF -DWITH_SUPERCOP=OFF -DOPT_FLAGS=-std=c++11`.
+Alternatively, clone the repository, create a `qaptools` subdirectory and copy the files of a [qaptools release](https://github.com/Charterhouse/qaptools/releases) into the subdirectory. Run `python setup.py install --qaptools-bin=qaptools/ --disable-libsnark`.
 
+The Windows version of PySNARK does not currently support libsnark.
+
+### Unix
+
+To build on Unix, a C++ compiler, the Python3 header files, and CMake are needed. The libsnark backend additionally requires SWIG and the GNU MP library. See [here](https://github.com/scipr-lab/libsnark) for details. On Linux, the following has been found to work to satisfy the requirements:
+
+```
+sudo apt-get install pkg-config build-essential cmake git libgmp3-dev libprocps-dev python-markdown libboost-all-dev libssl-dev
+```
+
+To build, either download a release [here](https://github.com/meilof/pysnark/releases) or clone PySNARK with submodules:
+
+```
+git clone --recursive https://github.com/meilof/pysnark.git
+```
+
+To disable the qaptools backend, use `--disable-qaptools`. To disable the libsnark backend, use `--disable-libsnark`. Any CMake arguments (`-D...`), for example, for libsnark, can be given direcly on the above command line. For example, on Mac OS X I use `python3 setup.py install -DCMAKE_PREFIX_PATH=/usr/local/Cellar/openssl/1.0.2t -DCMAKE_SHARED_LINKER_FLAGS=-L/usr/local/Cellar/openssl/1.0.2t/lib -DWITH_PROCPS=OFF -DWITH_SUPERCOP=OFF -DOPT_FLAGS=-std=c++11`.
 
 ## Using PySNARK (libsnark backend)
 
