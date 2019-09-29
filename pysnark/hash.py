@@ -6,7 +6,6 @@ import hashlib
 import struct
 import math
 
-import pysnark.libsnark
 from pysnark.runtime import LinComb
 
 PRIME = pysnark.runtime.backend.get_modulus()
