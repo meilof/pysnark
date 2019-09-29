@@ -65,11 +65,11 @@ mfest.close()
 
         
 def use_qaptools_bins(target):
-    apps = ['qapgen', 'qapgenf', 'qapinput', 'qapcoeffcache', 'qapprove', 'qapver']
-    exefix = '.exe' if os.name == 'nt' else ''
-
-    for app in apps:
-         shutil.copy2(qaptools_bin+'/'+app, target+"/"+app)
+    #apps = ['qapgen', 'qapgenf', 'qapinput', 'qapcoeffcache', 'qapprove', 'qapver']
+    #exefix = '.exe' if os.name == 'nt' else ''
+    
+    for filename in glob.glob(os.path.join(qaptools_bin, '*')):
+        shutil.copy(filename, dest_dir)
     
 if "-h" in sys.argv or "--help" in sys.argv:
     print("PySNARK setup.py\n\n" +
@@ -125,7 +125,7 @@ else:
 
 
 setup(name='PySNARK',
-      version='0.2' + ('-nols' if disable_libsnark else '') + ('-noqt' if disable_qaptools else ''),
+      version='0.2.1' + ('-nols' if disable_libsnark else '') + ('-noqt' if disable_qaptools else ''),
       description='Python zk-SNARK execution environment',
       author='Meilof Veeningen',
       author_email='meilof@gmail.com',
@@ -133,7 +133,7 @@ setup(name='PySNARK',
       packages=['pysnark'] +
                   (['pysnark.qaptools'] if not disable_qaptools else []) +
                   (['pysnark.libsnark'] if not disable_libsnark else []),
-      package_data={'pysnark.qaptools': []} if not disable_qaptools else {},
+      package_data={'pysnark.qaptools': ['*.sol']} if not disable_qaptools else {},
       ext_modules = my_exts,
       cmdclass={'build_ext': CMakeBuild} if not (disable_qaptools and disable_libsnark) else {}
 )
