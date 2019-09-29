@@ -3,6 +3,7 @@
 # based on https://martinopilia.com/posts/2018/09/15/building-python-extension.html
 # and https://github.com/m-pilia/disptools/blob/master/python_c_extension/CMakeLists.txt
 
+import glob
 import os
 import os.path
 import shutil
