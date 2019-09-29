@@ -88,12 +88,6 @@ class CMakeExtension(Extension):
 
 class CMakeBuild(build_ext):
     def build_extensions(self):
-        # Ensure that CMake is present and working
-        try:
-            out = subprocess.check_output(['cmake', '--version'])
-        except OSError:
-            raise RuntimeError('Cannot find CMake executable')
-
         for ext in self.extensions:
             extdir = os.path.abspath(os.path.dirname(self.get_ext_fullpath(ext.name)))
             tempdir = self.build_temp+"/"+ext.name
@@ -103,6 +97,12 @@ class CMakeBuild(build_ext):
             if ext.prefun:
                 ext.prefun(extdir)
                 continue
+
+            # Ensure that CMake is present and working
+            try:
+                out = subprocess.check_output(['cmake', '--version'])
+            except OSError:
+                raise RuntimeError('Cannot find CMake executable')
 
             cmake_args = [
                 '-DCMAKE_LIBRARY_OUTPUT_DIRECTORY={}'.format(extdir),
