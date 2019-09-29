@@ -53,7 +53,13 @@ To build, either download a release [here](https://github.com/meilof/pysnark/rel
 git clone --recursive https://github.com/meilof/pysnark.git
 ```
 
-To disable the qaptools backend, use `--disable-qaptools`. To disable the libsnark backend, use `--disable-libsnark`. Any CMake arguments (`-D...`), for example, for libsnark, can be given direcly on the above command line. For example, on Mac OS X I use `python3 setup.py install -DCMAKE_PREFIX_PATH=/usr/local/Cellar/openssl/1.0.2t -DCMAKE_SHARED_LINKER_FLAGS=-L/usr/local/Cellar/openssl/1.0.2t/lib -DWITH_PROCPS=OFF -DWITH_SUPERCOP=OFF -DOPT_FLAGS=-std=c++11`.
+Then build and install using (where `python` is your Python 3 executable):
+
+```
+python setup.py install
+```
+
+To disable the qaptools backend, run `python setup.py` with `--disable-qaptools`. To disable the libsnark backend, use `--disable-libsnark`. Any CMake arguments (`-D...`), for example, for libsnark, can be given direcly on the above command line. For example, on Mac OS X I use `python3 setup.py install -DCMAKE_PREFIX_PATH=/usr/local/Cellar/openssl/1.0.2t -DCMAKE_SHARED_LINKER_FLAGS=-L/usr/local/Cellar/openssl/1.0.2t/lib -DWITH_PROCPS=OFF -DWITH_SUPERCOP=OFF -DOPT_FLAGS=-std=c++11`.
 
 ## Using PySNARK (libsnark backend)
 
