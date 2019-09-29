@@ -70,7 +70,7 @@ def use_qaptools_bins(target):
     #exefix = '.exe' if os.name == 'nt' else ''
     
     for filename in glob.glob(os.path.join(qaptools_bin, '*')):
-        shutil.copy(filename, dest_dir)
+        shutil.copy(filename, target)
     
 if "-h" in sys.argv or "--help" in sys.argv:
     print("PySNARK setup.py\n\n" +
