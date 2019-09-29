@@ -30,13 +30,13 @@
 
 # Copyright (C) Meilof Veeningen, 2019
 
-from   gmpy2 import invert
 import os
 import os.path
 import random as rndom
 import subprocess
 import sys
 
+from . import gmpy
 from . import options
 from .options import vc_p
 from . import qapsplit
@@ -135,7 +135,7 @@ def one():
     return Sig([(1, vc_ctx+"/onex")])
 
 def fieldinverse(val):
-    return int(invert(val, vc_p))
+    return int(gmpy.invert(val, vc_p))
 
 def get_modulus():
     return vc_p
