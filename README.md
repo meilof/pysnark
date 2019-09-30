@@ -18,6 +18,11 @@ print("The cube of", sys.argv[1], "is", cube(int(sys.argv[1])))
 
 PySNARK can use [qaptools](https://github.com/Charterhouse/qaptools) or [libsnark](https://github.com/scipr-lab/libsnark) as backend. For any computations performed using the PubVal datatype provided by pysnark (or using the `@snark` decorator), the library keeps track of the Rank-1 constraint system of the computation. When the computation finishes,  key material for the computation is generated (or re-used) and a SNARK proof is generated.
 
+Features:
+
+* Support Unix platforms (Linux, Mac OS X, ...) and Windows
+* Automatically produce Solidity smart contract
+
 The [previous PySNARK](https://github.com/Charterhouse/pysnark) also inclded functionality to automatically turn the zk-SNARK into a Solidity smart contracts for use on the Ethereum blockchain. This functionality is not available in the current version yet.
 
 PySNARK may be used for non-commercial, experimental and research purposes; see `LICENSE.md` for details. 
