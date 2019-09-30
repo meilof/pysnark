@@ -10,3 +10,8 @@ examples/pysnark_*
 examples/out
 MANIFEST.in
 qaptools/*
+examples/contracts/*
+examples/test/*
+examples/migrations/*
+examples/truffle-config.js
+examples/test/TestPysnark.sol

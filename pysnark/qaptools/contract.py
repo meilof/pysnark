@@ -33,7 +33,7 @@ import shutil
 import subprocess
 import sys
 
-import pysnark.qaptools.options
+from . import options
 
 def tog1(tok):  return [0, 0] if tok == "0" else [int(x, 0) for x in tok.split("_")]
 def tog2(tok):  return [0, 0, 0, 0] if tok == "0" else [int(x, 0) for x in tok[1:-1].replace("]_[", ",").split(",")]
@@ -81,7 +81,7 @@ def contract():
 
     # copy all predefined contracts to the contract dir
     try:
-        patt = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'contracts', '*.sol')
+        patt = os.path.join(os.path.abspath(os.path.dirname(__file__)), '*.sol')
         for fl in glob.glob(patt):
             print("Import Solidity script", fl, file=sys.stderr)
             shutil.copyfile(fl, os.path.join(contractdir, os.path.basename(fl)))
@@ -92,14 +92,14 @@ def contract():
     contract = open(os.path.join(contractdir, "Pysnark.sol"), "w")
 
     print("""\
-pragma solidity ^0.4.2;
+pragma solidity ^0.5.0;
 
 import "truffle/Assert.sol";
 import "../contracts/Pairing.sol";
 
 contract Pysnark {
 	event Verified(string);
-	function verify(uint[] proof, uint[] io) public returns (bool r) {
+	function verify(uint[] memory proof, uint[] memory io) public returns (bool r) {
 	    Pairing.G1Point memory p_rvx;
 	    Pairing.G1Point memory p_ryx;
 	    Pairing.G1Point memory versum;
@@ -195,7 +195,6 @@ contract Pysnark {
 
             # for (auto const & it: proof.blocks) versum += it.second.comm;
             for b in qv.blocks:
-                print("*** block", b)
                 print("        versum = Pairing.doadd(versum, %s);" % (strg1p(pblocks[curfname+"/"+b][0])), file=contract)
 
             # opt_atePairing(e1, g2, proof.p_z);
@@ -341,7 +340,7 @@ contract Pysnark {
     conttest = open(os.path.join(conttestdir, "TestPysnark.sol"), "w")
 
     print("""\
-pragma solidity ^0.4.2;
+pragma solidity ^0.5.0;
 
 import "truffle/Assert.sol";
 import "../contracts/Pysnark.sol";

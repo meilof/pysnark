@@ -3,6 +3,9 @@
 * source release
 * setup.py: detect which depends/ are available, also allow to use exes, even .exe windows...
   also: put in version
+  
+* clean up swig stuff
+* qaptools: get rid of output "*** block" ...
 
 * Energy-saving
    - has a small effect on performance, but not that much: cf
