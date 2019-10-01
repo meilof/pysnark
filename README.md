@@ -21,9 +21,8 @@ PySNARK can use [qaptools](https://github.com/Charterhouse/qaptools) or [libsnar
 Features:
 
 * Support Unix platforms (Linux, Mac OS X, ...) and Windows
-* Automatically produce Solidity smart contract
-
-The [previous PySNARK](https://github.com/Charterhouse/pysnark) also inclded functionality to automatically turn the zk-SNARK into a Solidity smart contracts for use on the Ethereum blockchain. This functionality is not available in the current version yet.
+* Automatically produce Solidity smart contracts
+* Support for [integer arithmetic](https://github.com/meilof/pysnark/blob/master/pysnark/runtime.py#L179), [linear algebra](https://github.com/meilof/pysnark/blob/master/pysnark/linalg.py#L3), [arrays with conditional indexing](https://github.com/meilof/pysnark/blob/master/pysnark/array.py#L36), [if statements](https://github.com/meilof/pysnark/blob/master/pysnark/branching.py#L10) and [branching](https://github.com/meilof/pysnark/blob/master/pysnark/branching.py#L132), and [hashing](https://github.com/meilof/pysnark/blob/master/pysnark/hash.py#L61); see provided [examples](https://github.com/meilof/pysnark/tree/master/examples)
 
 PySNARK may be used for non-commercial, experimental and research purposes; see `LICENSE.md` for details. 
 PySNARK is experimental and **not fit for production environment**.
@@ -194,6 +193,86 @@ In the second verifiable computation, do
 
 This is implicitly used whenever a function is called that is decorated with `@pysnark.qaptools.backend.subqap`.
 When a particular functon is used multiple times in a verifiable computation, using `@pysnark.qaptools.backend.subqap` prevents the circuit for the function to be replicated, resulting in smaller key material (but slower verification). 
+
+## Using PySNARK for smart contracts 
+
+The `qaptools` backand of PySNARK supports the automatic generation of Solidity smart contracts that verify the correctness of the given zk-SNARK.
+
+First, run a verifiable computation using the `qaptools` backend:
+
+```
+PYSNARK_BACKEND=qaptools python3 cube.py 33
+```
+
+(on Windows, simply run `python3 cube.py 33` since `qaptools` is the only available backend).
+
+Next, use the following command to generate smart contracts:
+
+```
+python -m pysnark.qaptools.contract
+```
+
+This generates smart contract `contracts/Pysnark.sol` to verify the previously performed verifiable computation (using library `contracts/Pairing.sol` that is also copied into the directory), and test script `test/TestPysnark.sol` that gives a test case for the contract based on the previous I/O and proof.
+
+To test out the contracts using Truffle, first run `truffle init` from where you are running the above command. 
+This functionality is based on ideas from [ZoKrates](https://github.com/JacobEberhardt/ZoKrates). Then run `truffle test` to run the test script and check that the given proof can indeed be verified in Solidity.
+
+Note that `test/TestPysnark.sol` indeed contains the I/O from the computation:
+```
+pragma solidity ^0.5.0;
+
+import "truffle/Assert.sol";
+import "../contracts/Pysnark.sol";
+
+contract TestPysnark {
+    function testVerifies() public {
+        Pysnark ps = new Pysnark();
+        uint[] memory proof = new uint[](22);
+        uint[] memory io = new uint[](2);
+        proof[0] = ...;
+        ...
+        proof[21] = ...;
+        io[0] = 21; // main/o_in
+        io[1] = 9261; // main/o_out
+        Assert.equal(ps.verify(proof, io), true, "Proof should verify");
+    }
+}
+```
+
+Smart contracts can also refer to commitments, e.g., as imported with the `pysnark.runtime.importcomm` API call. 
+In this case, the commitment becomes an argument to the verification function (a six-valued integer array), and the test case shows how the commitment used in the present computation should be used as value for that argument, e.g.:
+
+```
+pragma solidity ^0.5.0;
+
+import "truffle/Assert.sol";
+import "../contracts/Pysnark.sol";
+
+contract TestPysnark {
+    function testVerifies() public {
+        Pysnark ps = new Pysnark(); 
+        uint[] memory pysnark_comm_test = new uint[](6);
+        pysnark_comm_test[0] = ...;
+        ...
+        Assert.equal(ps.verify(proof, io, pysnark_comm_test), true, "Proof should verify");
+    }
+}
+```
+
+To get more detailed information about the gas usage of the smart contract, run with Ganache: start ``ganache-cli``; edit ``truffle.js`` to add a development network, e.g.:
+
+```
+module.exports = {
+  networks: {
+    development: {
+      host: "127.0.0.1",
+      port: 8545,
+      network_id: "*" // Match any network id
+    }
+  }
+};
+```
+and finally, run ``truffle test --network development``.
 
 ## Acknowledgements
 
