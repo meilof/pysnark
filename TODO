@@ -7,6 +7,16 @@
 * clean up swig stuff
 * qaptools: get rid of output "*** block" ...
 
+* Are those opt flags still needed? Should be set in cmakefile anyway?
+* Setup py should still copy only the exes, manifest decides what goes into the package!
+* Add strip to makefile, upload new tar gz
+* Catch exception for qapver separately (for sudoku)
+* Groth proof/andere proof systems?
+* Om de dict zelf copy on write te maken is iig wel idee. Behoud bak ref en update als nodig. Dict.copy en hascopied set. Dan hoef je bak ook niet bij te houden
+* Is there a better code indicator than lineno? Misschien lasti? Is lineno idd niet gedef als vanuit interpreter?
+  Line number not enough eg recursive ranges. 
+* Win32 release van qaptools, minimale doc, output mooier maken
+
 * Energy-saving
    - has a small effect on performance, but not that much: cf
        examples meilof$ time python3 manysquares.py 100000 0
