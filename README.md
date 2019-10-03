@@ -27,6 +27,8 @@ Features:
 PySNARK may be used for non-commercial, experimental and research purposes; see `LICENSE.md` for details. 
 PySNARK is experimental and **not fit for production environment**.
 
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/meilof/pysnark/nobackend?filepath=notebooks%2Ftest.ipynb)
+
 ## Installation
 
 PySNARK requires Python 3.*.
