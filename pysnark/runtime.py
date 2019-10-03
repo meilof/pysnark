@@ -19,22 +19,27 @@ elif "PYSNARK_BACKEND" in os.environ:
         import pysnark.libsnark.backend
         backend=pysnark.libsnark.backend
     else:
-        if os.environ["PYSNARK_BACKEND"]!="none":
+        if os.environ["PYSNARK_BACKEND"]!="nobackend":
             print("*** PySNARK: unknown backend in environment variables: " + os.environ["PYSNARK_BACKEND"])
         import pysnark.nobackend
         backend=pysnark.nobackend
 else:
     try:
-        import pysnark.libsnark.backend
-        backend=pysnark.libsnark.backend
+        get_ipython()
+        import pysnark.nobackend
+        backend=pysnark.nobackend
     except:
         try:
-            import pysnark.qaptools.backend
-            backend=pysnark.qaptools.backend
+            import pysnark.libsnark.backend
+            backend=pysnark.libsnark.backend
         except:
-            import pysnark.nobackend
-            backend=pysnark.nobackend
-            print("*** PySNARK: no backend avaiable, not making proofs", file=sys.stderr)
+            try:
+                import pysnark.qaptools.backend
+                backend=pysnark.qaptools.backend
+            except:
+                import pysnark.nobackend
+                backend=pysnark.nobackend
+                print("*** PySNARK: no backend avaiable, not making proofs", file=sys.stderr)
             
 
 """

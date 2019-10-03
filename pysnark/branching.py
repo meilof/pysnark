@@ -69,7 +69,7 @@ class BranchContext:
                 if not nm in self.ctx.vals: raise RuntimeError("branch did not set value for " + nm)
                 self.nodefvals[nm] = if_then_else(self.cond, self.ctx.vals[nm], self.nodefvals[nm])
         for nm in self.nodefvals: del self.ctx.vals[nm]
-
+            
         for nm in self.ctx.vals:
             if nm in self.bak:
                 self.ctx.vals[nm] = if_then_else(self.cond, self.ctx.vals[nm], self.bak[nm])
@@ -160,7 +160,7 @@ class WhileContext(BranchContext):
 
 def _while(cond,ctx=None):
     ctx = getcontext(ctx)
-        
+    
     lineno = inspect.currentframe().f_back.f_lineno
     if len(ctx.stack)!=0 and isinstance(ctx.stack[-1],WhileContext) and \
        ctx.stack[-1].ctx is ctx and ctx.stack[-1].lineno == lineno:
