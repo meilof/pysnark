@@ -4,6 +4,12 @@
 * setup.py: detect which depends/ are available, also allow to use exes, even .exe windows...
   also: put in version
   
+* give better feedback on how to set bitlength (e.g., kaplan-meier as motivating example)
+* fixed points: allow negative 
+
+* when running from prompt: if there has ever been an exception and we do ctrl-d,
+  proof is not made... (which may make sense...)
+  
 * clean up swig stuff
 * qaptools: get rid of output "*** block" ...
 

@@ -1,8 +1,10 @@
-# Copyright (c) 2016-2018 Koninklijke Philips N.V. All rights reserved. A
-# copyright license for redistribution and use in source and binary forms,
-# with or without modification, is hereby granted for non-commercial,
-# experimental and research purposes, provided that the following conditions
-# are met:
+# Portions copyright (C) Meilof Veeningen, 2019
+
+# Portions copyright (c) 2016-2018 Koninklijke Philips N.V. All rights
+# reserved. A copyright license for redistribution and use in source and
+# binary forms, with or without modification, is hereby granted for
+# non-commercial, experimental and research purposes, provided that the
+# following conditions are met:
 # - Redistributions of source code must retain the above copyright notice,
 #   this list of conditions and the following disclaimers.
 # - Redistributions in binary form must reproduce the above copyright notice,
@@ -28,14 +30,14 @@
 
 from scipy.stats import chi2
 
-from pysnark.runtime import Var
-from pysnark.fixedpoint import VarFxp
+import pysnark.runtime
 
-import pysnark.prove
+from pysnark.runtime import PrivVal
+from pysnark.fixedpoint import LinCombFxp
 
 if __name__ == '__main__':
     # example batch of survival data from two populations
-    kmdata = Var.vars([
+    kmdata = map(lambda x: map(PrivVal, x), [
         [ 0, 34, 0, 11 ], [ 0, 34, 0, 11 ], [ 0, 34, 0, 11 ], [ 0, 34, 0, 11 ],
         [ 0, 34, 0, 11 ], [ 0, 34, 0, 11 ], [ 0, 34, 0, 11 ], [ 0, 34, 0, 11 ],
         [ 1, 34, 0, 11 ], [ 0, 33, 0, 11 ], [ 0, 33, 0, 11 ], [ 0, 33, 1, 11 ],
@@ -79,23 +81,24 @@ if __name__ == '__main__':
         [ 0, 4, 0, 1 ], [ 0, 4, 0, 1 ], [ 0, 4, 0, 1 ], [ 0, 4, 0, 1 ],
         [ 0, 4, 0, 1 ], [ 0, 4, 0, 1 ], [ 0, 4, 0, 1 ], [ 0, 4, 0, 1 ],
         [ 0, 4, 0, 1 ], [ 0, 4, 0, 1 ], [ 0, 4, 0, 1 ], [ 0, 4, 0, 1 ],
-        [ 0, 4, 0, 1 ], [ 0, 4, 0, 1 ], [ 0, 4, 0, 1 ]], "kmdata", 2)
-
+        [ 0, 4, 0, 1 ], [ 0, 4, 0, 1 ], [ 0, 4, 0, 1 ]])
+    
+    pysnark.runtime.bitlength = 32
 
     def step(di1,ni1,di2,ni2):
-        frc = VarFxp.fromvar(di1+di2)/VarFxp.fromvar(ni1+ni2)
+        frc = LinCombFxp.fromvar(di1+di2,True)/LinCombFxp.fromvar(ni1+ni2,True)
         ecur = frc*ni1
-        v1n = VarFxp.fromvar(ni1 * ni2 * (di1+di2) * (ni1+ni2-di1-di2))
-        v1d = VarFxp.fromvar((ni1+ni2) * (ni1+ni2) * (ni1+ni2-1))
+        v1n = LinCombFxp.fromvar(ni1 * ni2 * (di1+di2) * (ni1+ni2-di1-di2),True)
+        v1d = LinCombFxp.fromvar((ni1+ni2) * (ni1+ni2) * (ni1+ni2-1),True)
         v1 = v1n/v1d
         return di1,ecur,v1
 
     steps = map(lambda x: step(*x), kmdata)
     (dtot,etot,vtot) = map(sum, zip(*steps))
 
-    dtot = VarFxp.fromvar(dtot)
+    dtot = LinCombFxp.fromvar(dtot, True)
     chi0 = (dtot - etot)
     chi = chi0*chi0/vtot
     chi = chi.val()
 
-    print "Final result: chi statistic=", chi, ", p-value=", 1 - chi2.cdf(chi, 1)
+    print("Final result: chi statistic=", chi, ", p-value=", 1 - chi2.cdf(chi, 1))
