@@ -111,7 +111,7 @@ class CMakeBuild(build_ext):
                 '-DCMAKE_LIBRARY_OUTPUT_DIRECTORY={}'.format(extdir),
                 '-DCMAKE_RUNTIME_OUTPUT_DIRECTORY={}'.format(extdir),
                 '-DCMAKE_SWIG_OUTDIR={}'.format(extdir),
-                '-DSWIG_OUTFILE_DIR={}'.format(tempdir),
+#                '-DSWIG_OUTFILE_DIR={}'.format(tempdir),
                 '-DCMAKE_ARCHIVE_OUTPUT_DIRECTORY={}'.format(tempdir),
                 '-DPYTHON_EXECUTABLE={}'.format(sys.executable)                
             ]

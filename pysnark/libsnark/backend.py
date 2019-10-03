@@ -2,26 +2,26 @@
 
 from . import libsnark
 
-pb=libsnark.protoboard_pub()
+pb=libsnark.zks_protoboard_pub()
 
 def privval(val):
-    pbv=libsnark.pb_variable()
+    pbv=libsnark.zks_pb_variable()
     pbv.allocate(pb)
     pb.setval(pbv, val)
-    return libsnark.linear_combination(pbv)
+    return libsnark.zks_linear_combination(pbv)
 
 def pubval(val):
-    pbv=libsnark.pb_variable()
+    pbv=libsnark.zks_pb_variable()
     pbv.allocate(pb)
     pb.setpublic(pbv)
     pb.setval(pbv, val)
-    return libsnark.linear_combination(pbv)
+    return libsnark.zks_linear_combination(pbv)
 
 def zero():
-    return libsnark.linear_combination()
+    return libsnark.zks_linear_combination()
     
 def one():
-    return libsnark.linear_combination(1)
+    return libsnark.zks_linear_combination(1)
 
 def fieldinverse(val):
     return libsnark.fieldinverse(val)
@@ -30,12 +30,12 @@ def get_modulus():
     return libsnark.get_modulus()
 
 def add_constraint(v, w, y):
-    pb.add_r1cs_constraint(libsnark.r1cs_constraint(v,w,y))
+    pb.add_r1cs_constraint(libsnark.zks_r1cs_constraint(v,w,y))
     
 def prove():
     if pb.num_constraints()==0:
         # libsnark does not work in this case, add a no-op
-        pb.add_r1cs_constraint(libsnark.r1cs_constraint(libsnark.linear_combination(),libsnark.linear_combination(),libsnark.linear_combination()))
+        pb.add_r1cs_constraint(libsnark.zks_r1cs_constraint(libsnark.zks_linear_combination(),libsnark.zks_linear_combination(),libsnark.zks_linear_combination()))
         
     cs=pb.get_constraint_system_pubs()
     pubvals=pb.primary_input_pubs();
@@ -45,7 +45,7 @@ def prove():
     keypair=libsnark.read_key("pysnark_ek", cs)
     if not keypair:
         print("*** No pysnark_key or computation changed, generating keys...")
-        keypair=libsnark.r1cs_ppzksnark_generator(cs)
+        keypair=libsnark.zks_generator(cs)
         libsnark.write_keys(keypair, "pysnark_vk", "pysnark_ek")
     
     print("*** PySNARK: generating proof pysnark_log (" +
@@ -55,8 +55,8 @@ def prove():
           ", #constraint=" + str(pb.num_constraints()) +
            ")")
     
-    proof=libsnark.r1cs_ppzksnark_prover(keypair.pk, pubvals, privvals);
-    verified=libsnark.r1cs_ppzksnark_verifier_strong_IC(keypair.vk, pubvals, proof);
+    proof=libsnark.zks_prover(keypair.pk, pubvals, privvals);
+    verified=libsnark.zks_verifier_strong_IC(keypair.vk, pubvals, proof);
     
     print("*** Public inputs: " + " ".join([str(pubvals.at(i)) for i in range(pubvals.size())]))
     print("*** Verification status:", verified)
