@@ -39,7 +39,6 @@ else:
             except:
                 import pysnark.nobackend
                 backend=pysnark.nobackend
-                print("*** PySNARK: no backend avaiable, not making proofs", file=sys.stderr)
             
 
 """
