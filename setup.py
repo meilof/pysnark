@@ -128,7 +128,7 @@ else:
 
 
 setup(name='PySNARK',
-      version='0.2.1' + ('-nols' if disable_libsnark else '') + ('-noqt' if disable_qaptools else ''),
+      version='0.2.2' + ('-nols' if disable_libsnark else '') + ('-noqt' if disable_qaptools else ''),
       description='Python zk-SNARK execution environment',
       author='Meilof Veeningen',
       author_email='meilof@gmail.com',
