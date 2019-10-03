@@ -45,10 +45,12 @@ The Windows version of PySNARK does not currently support libsnark.
 
 ### Unix
 
-To build on Unix, a C++ compiler, the Python3 header files, and CMake are needed. The libsnark backend additionally requires SWIG and the GNU MP library. See [here](https://github.com/scipr-lab/libsnark) for details. On Linux, the following has been found to work to satisfy the requirements:
+To build on Unix, a C++ compiler, the Python3 header files, and CMake are needed. The libsnark backend additionally requires SWIG and the GNU MP library. See [here](https://github.com/scipr-lab/libsnark) for details. 
+
+On Ubuntu 18.04, the following command installs the required dependencies:
 
 ```
-sudo apt-get install pkg-config build-essential cmake git libgmp3-dev libprocps-dev python-markdown libboost-all-dev libssl-dev
+sudo apt install pkg-config build-essential cmake libgmp3-dev libprocps-dev libssl-dev libboost-dev libboost-program-options-dev python3-setuptools python3-dev swig
 ```
 
 To build, either download a release [here](https://github.com/meilof/pysnark/releases) or clone PySNARK with submodules:
