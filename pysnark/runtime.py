@@ -240,7 +240,7 @@ class LinComb:
             add_constraint(other, res, self)
             return res
         elif is_base_value(other):
-            if self.value % other == 0:
+            if self.value % other != 0:
                 raise ValueError(str(self.value) + " is not properly divisible by " + str(other))
             return LinComb(self.value/other, self.lc*backend.fieldinverse(other))
         else:
