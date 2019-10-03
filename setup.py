@@ -104,6 +104,8 @@ class CMakeBuild(build_ext):
                 out = subprocess.check_output(['cmake', '--version'])
             except OSError:
                 raise RuntimeError('Cannot find CMake executable')
+                
+            print("using outdir", extdir)
 
             cmake_args = [
                 '-DCMAKE_LIBRARY_OUTPUT_DIRECTORY={}'.format(extdir),
