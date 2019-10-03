@@ -22,6 +22,9 @@ for f in sys.argv:
 for f in cmake_cmd_args:
     sys.argv.remove(f)
     
+sys.argv.append("--disable-libsnark")
+sys.argv.append("--disable-qaptools")
+    
 disable_libsnark = False
 if "--disable-libsnark" in sys.argv:
     disable_libsnark = True
