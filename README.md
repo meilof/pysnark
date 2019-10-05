@@ -22,7 +22,7 @@ Features:
 
 * Support Unix platforms (Linux, Mac OS X, ...) and Windows
 * Automatically produce Solidity smart contracts
-* Automatically produce snarkjs verification key/proof/public values
+* Automatically produce snarkjs circuit+witness or verification key+proof+public values
 * Support for [integer arithmetic](https://github.com/meilof/pysnark/blob/master/pysnark/runtime.py#L179), [linear algebra](https://github.com/meilof/pysnark/blob/master/pysnark/linalg.py#L3), [arrays with conditional indexing](https://github.com/meilof/pysnark/blob/master/pysnark/array.py#L36), [if statements](https://github.com/meilof/pysnark/blob/master/pysnark/branching.py#L10) and [branching](https://github.com/meilof/pysnark/blob/master/pysnark/branching.py#L132), and [hashing](https://github.com/meilof/pysnark/blob/master/pysnark/hash.py#L61); see provided [examples](https://github.com/meilof/pysnark/tree/master/examples)
 
 PySNARK may be used for non-commercial, experimental and research purposes; see `LICENSE.md` for details. 
@@ -79,6 +79,7 @@ cd examples
 python cube.py 3
 ```
 
+If the libsnark backend is available, it will be imported and used by default.
 This will execute a SNARK computation to compute the cube of the input value, `3`.
 As the comptation prorgresses, a constraint system of the computation is kept.
 
@@ -103,7 +104,26 @@ The cube of 33 is 35937
 meilofs-air:examples meilof$ python3 -m pysnark.libsnark.tosnarkjs
 meilofs-air:examples meilof$ snarkjs verify
 OK
+$ snarkjs generateverifier
+$ snarkjs generatecall
 ```
+
+## Using PySNARK (snarkjs backend)
+
+```
+$ cd examples
+$ PYSNARK_BACKEND=snarkjs python3 cube.py 33
+The cube of 33 is 35937
+witness.json and circuit.json written; use 'snarkjs setup', 'snarkjs proof', and 'snarkjs verify'
+$ snarkjs setup
+$ snarkjs proof
+$ snarkjs verify
+OK
+$ snarkjs generateverifier
+$ snarkjs generatecall
+...
+```
+
 
 ## Using PySNARK (qaptools backend)
 
