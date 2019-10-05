@@ -70,7 +70,8 @@ def prove():
     print('{', file=cfile)
     print('  "signals": [', file=cfile)
     print('    { "names": [ "one" ] },', file=cfile)
-    print(',\n'.join(['    { "names": [ "' + str(i+1) + '" ] }' for i in range(len(pubvals)+len(privvals))]), file=cfile)
+    print(',\n'.join(['    { "names": [ "p' + str(i+1) + '" ] }' for i in range(len(pubvals))]) + (',' if len(privvals)!=0 else ''), file=cfile)
+    print(',\n'.join(['    { "names": [ "w' + str(i+1) + '" ] }' for i in range(len(privvals))]), file=cfile)
     print('  ],', file=cfile)
     print('  "constraints": [', file=cfile)
     
