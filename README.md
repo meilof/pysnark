@@ -22,6 +22,7 @@ Features:
 
 * Support Unix platforms (Linux, Mac OS X, ...) and Windows
 * Automatically produce Solidity smart contracts
+* Automatically produce snarkjs verification key/proof/public values
 * Support for [integer arithmetic](https://github.com/meilof/pysnark/blob/master/pysnark/runtime.py#L179), [linear algebra](https://github.com/meilof/pysnark/blob/master/pysnark/linalg.py#L3), [arrays with conditional indexing](https://github.com/meilof/pysnark/blob/master/pysnark/array.py#L36), [if statements](https://github.com/meilof/pysnark/blob/master/pysnark/branching.py#L10) and [branching](https://github.com/meilof/pysnark/blob/master/pysnark/branching.py#L132), and [hashing](https://github.com/meilof/pysnark/blob/master/pysnark/hash.py#L61); see provided [examples](https://github.com/meilof/pysnark/tree/master/examples)
 
 PySNARK may be used for non-commercial, experimental and research purposes; see `LICENSE.md` for details. 
@@ -87,6 +88,22 @@ By default, if available, the libsnark backend will be used. In this case, the f
 * `pysnark_vk`: key material to verify proofs for this computation
 * `pysnark_log`: computation log that can be verified with the `pysnark_vk` key: number of inputs/outputs, followed by the inputs/outputs themselves, followed by a proof that the input/outputs were correctly computed 
 
+
+### Combining with snarkjs
+
+PySNARK with the libsnark backend can automatically produce snarkjs `public.json`, `proof.json` and `verification_key.json` files for the performed verifiable computation:
+
+```
+meilofs-air:examples meilof$ python3 cube.py 33
+The cube of 33 is 35937
+*** Trying to read pysnark_ek
+*** PySNARK: generating proof pysnark_log (sat=True, #io=2, #witness=2, #constraint=3)
+*** Public inputs: 33 35937
+*** Verification status: True
+meilofs-air:examples meilof$ python3 -m pysnark.libsnark.tosnarkjs
+meilofs-air:examples meilof$ snarkjs verify
+OK
+```
 
 ## Using PySNARK (qaptools backend)
 

@@ -56,7 +56,8 @@ def prove():
            ")")
     
     proof=libsnark.zks_prover(keypair.pk, pubvals, privvals);
-    verified=libsnark.zks_verifier_strong_IC(keypair.vk, pubvals, proof);
+    verified=libsnark.zks_verifier_strong_IC(keypair.vk, pubvals, proof)
+    libsnark.write_proof(proof, pubvals, "pysnark_log")
     
     print("*** Public inputs: " + " ".join([str(pubvals.at(i)) for i in range(pubvals.size())]))
     print("*** Verification status:", verified)
