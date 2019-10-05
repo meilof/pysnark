@@ -1,45 +1,42 @@
 # Copytight (C) Meilof Veeningen, 2019
 
+import importlib
 import os
 import sys
 
-# load backend
+backend = None
 
-if "pysnark.qaptools.backend" in sys.modules:
-    backend=sys.modules["pysnark.qaptools.backend"]
-elif "pysnark.nobackend" in sys.modules:
-    backend=sys.modules["pysnark.nobackend"]
-elif "pysnark.libsnark.backend" in sys.modules:
-    backend=sys.modules["pysnark.libsnark.backend"]
-elif "PYSNARK_BACKEND" in os.environ:
-    if os.environ["PYSNARK_BACKEND"]=="qaptools":
-        import pysnark.qaptools.backend
-        backend=pysnark.qaptools.backend
-    elif os.environ["PYSNARK_BACKEND"]=="libsnark":
-        import pysnark.libsnark.backend
-        backend=pysnark.libsnark.backend
-    else:
-        if os.environ["PYSNARK_BACKEND"]!="nobackend":
+backends = [
+    ["libsnark",  "pysnark.libsnark.backend"],
+    ["qaptools",  "pysnark.qaptools.backend"],
+    ["snarkjs",   "pysnark.snarkjsbackend"],
+    ["nobackend", "pysnark.nobackend"]
+]
+
+for mod in backends:
+    if mod[1] in sys.modules:
+        backend = sys.modules[mod[1]]
+        break
+
+if backend is None and "PYSNARK_BACKEND" in os.environ:
+        for mod in backends:
+            if os.environ["PYSNARK_BACKEND"]==mod[0]:
+                backend=importlib.import_module(mod[1])
+        if backend is None:
             print("*** PySNARK: unknown backend in environment variables: " + os.environ["PYSNARK_BACKEND"])
-        import pysnark.nobackend
-        backend=pysnark.nobackend
-else:
+
+if backend is None:
     try:
         get_ipython()
         import pysnark.nobackend
         backend=pysnark.nobackend
     except:
-        try:
-            import pysnark.libsnark.backend
-            backend=pysnark.libsnark.backend
-        except:
+        for mod in backends:
             try:
-                import pysnark.qaptools.backend
-                backend=pysnark.qaptools.backend
-            except:
-                import pysnark.nobackend
-                backend=pysnark.nobackend
-            
+                backend=importlib.import_module(mod[1])
+                break
+            except Exception as e:
+                print(e)
 
 """
 Operating principles:
@@ -514,4 +511,5 @@ def snark(fn):
 
 import atexit
 from .atexitmaybe import maybe
-atexit.register(maybe(backend.prove))
+# lambds used here to make sure that backend variable is read at the end
+atexit.register(maybe(lambda:backend.prove()))
