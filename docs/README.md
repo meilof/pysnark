@@ -18,10 +18,17 @@ print("The cube of", sys.argv[1], "is", cube(int(sys.argv[1])))
 
 PySNARK can use [qaptools](https://github.com/Charterhouse/qaptools) or [libsnark](https://github.com/scipr-lab/libsnark) as backend. For any computations performed using the PubVal datatype provided by pysnark (or using the `@snark` decorator), the library keeps track of the Rank-1 constraint system of the computation. When the computation finishes,  key material for the computation is generated (or re-used) and a SNARK proof is generated.
 
-The [previous PySNARK](https://github.com/Charterhouse/pysnark) also inclded functionality to automatically turn the zk-SNARK into a Solidity smart contracts for use on the Ethereum blockchain. This functionality is not available in the current version yet.
+Features:
+
+* Support Unix platforms (Linux, Mac OS X, ...) and Windows
+* Automatically produce Solidity smart contracts
+* Automatically produce snarkjs circuit+witness or verification key+proof+public values
+* Support for [integer arithmetic](https://github.com/meilof/pysnark/blob/master/pysnark/runtime.py#L179), [linear algebra](https://github.com/meilof/pysnark/blob/master/pysnark/linalg.py#L3), [arrays with conditional indexing](https://github.com/meilof/pysnark/blob/master/pysnark/array.py#L36), [if statements](https://github.com/meilof/pysnark/blob/master/pysnark/branching.py#L10) and [branching](https://github.com/meilof/pysnark/blob/master/pysnark/branching.py#L132), and [hashing](https://github.com/meilof/pysnark/blob/master/pysnark/hash.py#L61); see provided [examples](https://github.com/meilof/pysnark/tree/master/examples)
 
 PySNARK may be used for non-commercial, experimental and research purposes; see `LICENSE.md` for details. 
 PySNARK is experimental and **not fit for production environment**.
+
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/meilof/pysnark/nobackend?filepath=notebooks%2Ftest.ipynb)
 
 ## Installation
 
@@ -41,10 +48,12 @@ The Windows version of PySNARK does not currently support libsnark.
 
 ### Unix
 
-To build on Unix, a C++ compiler, the Python3 header files, and CMake are needed. The libsnark backend additionally requires SWIG and the GNU MP library. See [here](https://github.com/scipr-lab/libsnark) for details. On Linux, the following has been found to work to satisfy the requirements:
+To build on Unix, a C++ compiler, the Python3 header files, and CMake are needed. The libsnark backend additionally requires SWIG and the GNU MP library. See [here](https://github.com/scipr-lab/libsnark) for details. 
+
+On Ubuntu 18.04, the following command installs the required dependencies:
 
 ```
-sudo apt-get install pkg-config build-essential cmake git libgmp3-dev libprocps-dev python-markdown libboost-all-dev libssl-dev
+sudo apt install pkg-config build-essential cmake libgmp3-dev libprocps-dev libssl-dev libboost-dev libboost-program-options-dev python3-setuptools python3-dev swig
 ```
 
 To build, either download a release [here](https://github.com/meilof/pysnark/releases) or clone PySNARK with submodules:
@@ -70,6 +79,7 @@ cd examples
 python cube.py 3
 ```
 
+If the libsnark backend is available, it will be imported and used by default.
 This will execute a SNARK computation to compute the cube of the input value, `3`.
 As the comptation prorgresses, a constraint system of the computation is kept.
 
@@ -78,6 +88,41 @@ By default, if available, the libsnark backend will be used. In this case, the f
 * `pysnark_ek`: key material to generate proofs for this computation (if the same computation is performed later, this file will be re-used; if another computation is performed, it is rebuilt)
 * `pysnark_vk`: key material to verify proofs for this computation
 * `pysnark_log`: computation log that can be verified with the `pysnark_vk` key: number of inputs/outputs, followed by the inputs/outputs themselves, followed by a proof that the input/outputs were correctly computed 
+
+
+### Combining with snarkjs
+
+PySNARK with the libsnark backend can automatically produce snarkjs `public.json`, `proof.json` and `verification_key.json` files for the performed verifiable computation:
+
+```
+meilofs-air:examples meilof$ python3 cube.py 33
+The cube of 33 is 35937
+*** Trying to read pysnark_ek
+*** PySNARK: generating proof pysnark_log (sat=True, #io=2, #witness=2, #constraint=3)
+*** Public inputs: 33 35937
+*** Verification status: True
+meilofs-air:examples meilof$ python3 -m pysnark.libsnark.tosnarkjs
+meilofs-air:examples meilof$ snarkjs verify
+OK
+$ snarkjs generateverifier
+$ snarkjs generatecall
+```
+
+## Using PySNARK (snarkjs backend)
+
+```
+$ cd examples
+$ PYSNARK_BACKEND=snarkjs python3 cube.py 33
+The cube of 33 is 35937
+witness.json and circuit.json written; use 'snarkjs setup', 'snarkjs proof', and 'snarkjs verify'
+$ snarkjs setup
+$ snarkjs proof
+$ snarkjs verify
+OK
+$ snarkjs generateverifier
+$ snarkjs generatecall
+...
+```
 
 
 ## Using PySNARK (qaptools backend)
@@ -189,6 +234,86 @@ In the second verifiable computation, do
 
 This is implicitly used whenever a function is called that is decorated with `@pysnark.qaptools.backend.subqap`.
 When a particular functon is used multiple times in a verifiable computation, using `@pysnark.qaptools.backend.subqap` prevents the circuit for the function to be replicated, resulting in smaller key material (but slower verification). 
+
+## Using PySNARK for smart contracts 
+
+The `qaptools` backand of PySNARK supports the automatic generation of Solidity smart contracts that verify the correctness of the given zk-SNARK.
+
+First, run a verifiable computation using the `qaptools` backend:
+
+```
+PYSNARK_BACKEND=qaptools python3 cube.py 33
+```
+
+(on Windows, simply run `python3 cube.py 33` since `qaptools` is the only available backend).
+
+Next, use the following command to generate smart contracts:
+
+```
+python -m pysnark.qaptools.contract
+```
+
+This generates smart contract `contracts/Pysnark.sol` to verify the previously performed verifiable computation (using library `contracts/Pairing.sol` that is also copied into the directory), and test script `test/TestPysnark.sol` that gives a test case for the contract based on the previous I/O and proof.
+
+To test out the contracts using Truffle, first run `truffle init` from where you are running the above command. 
+This functionality is based on ideas from [ZoKrates](https://github.com/JacobEberhardt/ZoKrates). Then run `truffle test` to run the test script and check that the given proof can indeed be verified in Solidity.
+
+Note that `test/TestPysnark.sol` indeed contains the I/O from the computation:
+```
+pragma solidity ^0.5.0;
+
+import "truffle/Assert.sol";
+import "../contracts/Pysnark.sol";
+
+contract TestPysnark {
+    function testVerifies() public {
+        Pysnark ps = new Pysnark();
+        uint[] memory proof = new uint[](22);
+        uint[] memory io = new uint[](2);
+        proof[0] = ...;
+        ...
+        proof[21] = ...;
+        io[0] = 21; // main/o_in
+        io[1] = 9261; // main/o_out
+        Assert.equal(ps.verify(proof, io), true, "Proof should verify");
+    }
+}
+```
+
+Smart contracts can also refer to commitments, e.g., as imported with the `pysnark.runtime.importcomm` API call. 
+In this case, the commitment becomes an argument to the verification function (a six-valued integer array), and the test case shows how the commitment used in the present computation should be used as value for that argument, e.g.:
+
+```
+pragma solidity ^0.5.0;
+
+import "truffle/Assert.sol";
+import "../contracts/Pysnark.sol";
+
+contract TestPysnark {
+    function testVerifies() public {
+        Pysnark ps = new Pysnark(); 
+        uint[] memory pysnark_comm_test = new uint[](6);
+        pysnark_comm_test[0] = ...;
+        ...
+        Assert.equal(ps.verify(proof, io, pysnark_comm_test), true, "Proof should verify");
+    }
+}
+```
+
+To get more detailed information about the gas usage of the smart contract, run with Ganache: start ``ganache-cli``; edit ``truffle.js`` to add a development network, e.g.:
+
+```
+module.exports = {
+  networks: {
+    development: {
+      host: "127.0.0.1",
+      port: 8545,
+      network_id: "*" // Match any network id
+    }
+  }
+};
+```
+and finally, run ``truffle test --network development``.
 
 ## Acknowledgements
 
