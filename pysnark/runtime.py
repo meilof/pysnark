@@ -7,10 +7,11 @@ import sys
 backend = None
 
 backends = [
-    ["libsnark",  "pysnark.libsnark.backend"],
-    ["qaptools",  "pysnark.qaptools.backend"],
-    ["snarkjs",   "pysnark.snarkjsbackend"],
-    ["nobackend", "pysnark.nobackend"]
+    ["libsnark",    "pysnark.libsnark.backend"],
+    ["libsnarkgg",  "pysnark.libsnark.backendgg"],
+    ["qaptools",    "pysnark.qaptools.backend"],
+    ["snarkjs",     "pysnark.snarkjsbackend"],
+    ["nobackend",   "pysnark.nobackend"]
 ]
 
 for mod in backends:
