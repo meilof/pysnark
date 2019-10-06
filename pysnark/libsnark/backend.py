@@ -2,26 +2,26 @@
 
 from . import libsnark
 
-pb=libsnark.zks_protoboard_pub()
+pb=libsnark.ProtoboardPub()
 
 def privval(val):
-    pbv=libsnark.zks_pb_variable()
+    pbv=libsnark.PbVariable()
     pbv.allocate(pb)
     pb.setval(pbv, val)
-    return libsnark.zks_linear_combination(pbv)
+    return libsnark.LinearCombination(pbv)
 
 def pubval(val):
-    pbv=libsnark.zks_pb_variable()
+    pbv=libsnark.PbVariable()
     pbv.allocate(pb)
     pb.setpublic(pbv)
     pb.setval(pbv, val)
-    return libsnark.zks_linear_combination(pbv)
+    return libsnark.LinearCombination(pbv)
 
 def zero():
-    return libsnark.zks_linear_combination()
+    return libsnark.LinearCombination()
     
 def one():
-    return libsnark.zks_linear_combination(1)
+    return libsnark.LinearCombination(1)
 
 def fieldinverse(val):
     return libsnark.fieldinverse(val)
@@ -30,12 +30,12 @@ def get_modulus():
     return libsnark.get_modulus()
 
 def add_constraint(v, w, y):
-    pb.add_r1cs_constraint(libsnark.zks_r1cs_constraint(v,w,y))
+    pb.add_r1cs_constraint(libsnark.R1csConstraint(v,w,y))
     
 def prove():
     if pb.num_constraints()==0:
         # libsnark does not work in this case, add a no-op
-        pb.add_r1cs_constraint(libsnark.zks_r1cs_constraint(libsnark.zks_linear_combination(),libsnark.zks_linear_combination(),libsnark.zks_linear_combination()))
+        pb.add_r1cs_constraint(libsnark.R1csConstraint(libsnark.LinearCombination(),libsnark.LinearCombination(),libsnark.LinearCombination()))
         
     cs=pb.get_constraint_system_pubs()
     pubvals=pb.primary_input_pubs();

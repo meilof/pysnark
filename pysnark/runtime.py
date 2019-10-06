@@ -36,7 +36,7 @@ if backend is None:
                 backend=importlib.import_module(mod[1])
                 break
             except Exception as e:
-                print(e)
+                print("*** Error loading backend " + str(mod[1]) + ":", e)
 
 """
 Operating principles:
