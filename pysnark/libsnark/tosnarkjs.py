@@ -56,3 +56,5 @@ process_g1("pi_h", login, proofout)
 process_g1("pi_kp", login, proofout)
 print(' "protocol": "original"', file=proofout)
 print('}', file=proofout)
+
+print('*** Created proof.json, verification_key.json, public.json; test using "snarkjs verify"')

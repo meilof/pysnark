@@ -63,3 +63,5 @@ process_g2("pi_b", login, proofout)
 process_g1("pi_c", login, proofout)
 print(' "protocol": "groth"', file=proofout)
 print('}', file=proofout)
+
+print('*** Created proof.json, verification_key.json, public.json; test using "snarkjs verify"')
