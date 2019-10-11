@@ -88,6 +88,9 @@ class CMakeExtension(Extension):
         self.prefun = kwa["prefun"] if "prefun" in kwa else None
 
 class CMakeBuild(build_ext):
+    def get_outputs(self):
+        return []
+    
     def build_extensions(self):
         for ext in self.extensions:
             extdir = os.path.abspath(os.path.dirname(self.get_ext_fullpath(ext.name)))
