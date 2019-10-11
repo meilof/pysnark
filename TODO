@@ -1,6 +1,8 @@
+* write_proof: do non-binary output; check: should be montgomery or not?
+* write_proof does not actually work; convert to public.json, proof.json,
+  verification_key.json; output human readable ver key (see ~/temp/factor/)
+
 * documenteren
-* port smart contracts
-* source release
 * setup.py: detect which depends/ are available, also allow to use exes, even .exe windows...
   also: put in version
   
@@ -30,7 +32,7 @@
    - remove it? produces counter-intuitive results...
    - or check why it does not help that much
 * dealing with huge values, e.g., compute 2^10000 gives segfault
-  time python3 exp.py 2 10000
+  time python3 exp.py 2 10000; do lincomb.reduce() to -p/2,p/2; let nobackend rerurn 2^64 as modulus?
 * TypeError instead of ValueError?
 * remove gtest 
 * solve double dependency thing?

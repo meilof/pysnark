@@ -36,7 +36,8 @@ import random as rndom
 import subprocess
 import sys
 
-from . import gmpy
+import pysnark.gmpy
+
 from . import options
 from .options import vc_p
 from . import qapsplit
