@@ -30,7 +30,7 @@ if not os.path.isfile("depends/python-libsnark/CMakeLists.txt"):
     print("*** depends/python-libsnark/CMakeLists.txt not found, disabling libsnark backend")
     disable_libsnark = True
 
-disable_qaptools = False
+disable_qaptools = True
 if "--disable-qaptools" in sys.argv:
     disable_qaptools = True
     sys.argv.remove("--disable-qaptools")
