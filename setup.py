@@ -9,5 +9,8 @@ setup(name='PySNARK',
       author_email='meilof@gmail.com',
       url='https://github.com/meilof/pysnark',
       packages=['pysnark','pysnark.qaptools','pysnark.libsnark'],
-      package_data={'pysnark.qaptools': ['*.sol']}
+      package_data={'pysnark.qaptools': ['*.sol']},
+      extras_require={
+        'libsnark':  ["python-libsnark>=0.3.1"],
+      },
 )
