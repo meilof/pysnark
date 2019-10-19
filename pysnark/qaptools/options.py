@@ -1,8 +1,10 @@
-# Copyright (c) 2016-2018 Koninklijke Philips N.V. All rights reserved. A
-# copyright license for redistribution and use in source and binary forms,
-# with or without modification, is hereby granted for non-commercial,
-# experimental and research purposes, provided that the following conditions
-# are met:
+# Portions Copyright (C) Meilof Veeningen, 2019
+
+# Portions copyright (c) 2016-2018 Koninklijke Philips N.V. All rights
+# reserved. A copyright license for redistribution and use in source and
+# binary forms, with or without modification, is hereby granted for
+# non-commercial, experimental and research purposes, provided that the
+# following conditions are met:
 # - Redistributions of source code must retain the above copyright notice,
 #   this list of conditions and the following disclaimers.
 # - Redistributions in binary form must reproduce the above copyright notice,
@@ -27,15 +29,14 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import os
+import os.path
 
 vc_p = 21888242871839275222246405745257275088548364400416034343698204186575808495617
 """ The modulus used in the verifiable computation. All computations are performed using modular arithmetic with this modulus. """
 
 datadir = os.environ["PYSNARK_KEYDIR"] if "PYSNARK_KEYDIR" in os.environ else ""
 pdatadir = os.environ["PYSNARK_PROOFDIR"] if "PYSNARK_PROOFDIR" in os.environ else datadir
-
-qaptoolsdir = os.path.abspath(os.path.dirname(__file__))
-qaptoolsdir = os.environ["QAPTOOLS_BIN"] if "QAPTOOLS_BIN" in os.environ else qaptoolsdir
+qaptoolsdir = os.environ["QAPTOOLS_BIN"] if "QAPTOOLS_BIN" in os.environ else ""
 
 exefix = '.exe' if os.name == 'nt' else ''
 

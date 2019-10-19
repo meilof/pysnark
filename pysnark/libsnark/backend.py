@@ -1,6 +1,6 @@
 # Copyright (C) Meilof Veeningen, 2019
 
-from . import libsnark
+import libsnark.alt_bn128 as libsnark
 
 pb=libsnark.ProtoboardPub()
 
