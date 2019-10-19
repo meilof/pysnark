@@ -48,6 +48,10 @@ from . import runqapprove
 from . import runqapver
 from . import schedule
 
+from shutil import which
+if not which(options.get_qaptool_exe("qapgen")):
+    raise RuntimeError("Could not find qaptools executable " + options.get_qaptool_exe("qapgen"))
+
 random = rndom.SystemRandom()
 
 vc_ctx = None
