@@ -20,7 +20,7 @@ PySNARK can use [qaptools](https://github.com/Charterhouse/qaptools) or [libsnar
 
 Features:
 
-* Support Unix platforms (Linux, Mac OS X, ...) and Windows
+* Pure Python 3.*; libsnark and qaptools backends supported on Windows/Linux/Mac OS
 * Automatically produce Solidity smart contracts
 * Automatically produce snarkjs circuit+witness or verification key+proof+public values
 * Support for [integer arithmetic](https://github.com/meilof/pysnark/blob/master/pysnark/runtime.py#L179), [linear algebra](https://github.com/meilof/pysnark/blob/master/pysnark/linalg.py#L3), [arrays with conditional indexing](https://github.com/meilof/pysnark/blob/master/pysnark/array.py#L36), [if statements](https://github.com/meilof/pysnark/blob/master/pysnark/branching.py#L10) and [branching](https://github.com/meilof/pysnark/blob/master/pysnark/branching.py#L132), and [hashing](https://github.com/meilof/pysnark/blob/master/pysnark/hash.py#L61); see provided [examples](https://github.com/meilof/pysnark/tree/master/examples)
