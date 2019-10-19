@@ -32,43 +32,23 @@ PySNARK is experimental and **not fit for production environment**.
 
 ## Installation
 
-PySNARK requires Python 3.*.
-
-### Windows
-
-Download a Win64 release from [here](https://github.com/meilof/pysnark/releases) and run the following from its main folder:
-
 ```
-python setup.py install
+pip3 install git+https://github.com/meilof/pysnark
 ```
 
-Alternatively, clone the repository, create a `qaptools` subdirectory and copy the files of a [qaptools release](https://github.com/Charterhouse/qaptools/releases) into the subdirectory. Run `python setup.py install --qaptools-bin=qaptools/ --disable-libsnark`.
-
-The Windows version of PySNARK does not currently support libsnark.
-
-### Unix
-
-To build on Unix, a C++ compiler, the Python3 header files, and CMake are needed. The libsnark backend additionally requires SWIG and the GNU MP library. See [here](https://github.com/scipr-lab/libsnark) for details. 
-
-On Ubuntu 18.04, the following command installs the required dependencies:
+To use the `libsnark` backend, do
 
 ```
-sudo apt install pkg-config build-essential cmake libgmp3-dev libprocps-dev libssl-dev libboost-dev libboost-program-options-dev python3-setuptools python3-dev swig
+pip3 install python-libsnark
 ```
 
-To build, either download a release [here](https://github.com/meilof/pysnark/releases) or clone PySNARK with submodules:
+To use the `qaptools` backend, download and install [qaptools](https://github.com/Charterhouse/qaptools). If qaptoosl are not in the system path, set the `QAPTOOLS_BIN` environment variable to their location. On Windows, the qaptools executables can be placed in the current working directory.
+
+To use the `snarkjs` backend, do:
 
 ```
-git clone --recursive https://github.com/meilof/pysnark.git
+npm install snarkjs
 ```
-
-Then build and install using (where `python` is your Python 3 executable):
-
-```
-python setup.py install
-```
-
-To disable the qaptools backend, run `python setup.py` with `--disable-qaptools`. To disable the libsnark backend, use `--disable-libsnark`. Any CMake arguments (`-D...`), for example, for libsnark, can be given direcly on the above command line. For example, on Mac OS X I use `python3 setup.py install -DCMAKE_PREFIX_PATH=/usr/local/Cellar/openssl/1.0.2t -DCMAKE_SHARED_LINKER_FLAGS=-L/usr/local/Cellar/openssl/1.0.2t/lib -DWITH_PROCPS=OFF -DWITH_SUPERCOP=OFF -DOPT_FLAGS=-std=c++11`.
 
 ## Using PySNARK (libsnark backend)
 
