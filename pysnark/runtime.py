@@ -510,7 +510,12 @@ def snark(fn):
         
     return snark__
 
+autoprove = True
+
+def final():
+    if autoprove: backend.prove()
+
 import atexit
 from .atexitmaybe import maybe
 # lambds used here to make sure that backend variable is read at the end
-atexit.register(maybe(lambda:backend.prove()))
+atexit.register(maybe(final))
