@@ -107,7 +107,7 @@ $ snarkjs generatecall
 
 ## Using PySNARK (zkinterface backend)
 
-PySNARK with the `zkinteface` backend automatically produces a file `computation.zkif` containing the circuit, witness, and constraint system for the computation.
+PySNARK with the `zkinterface` backend automatically produces a file `computation.zkif` containing the circuit, witness, and constraint system for the computation.
 
 ```
 $ cd examples
