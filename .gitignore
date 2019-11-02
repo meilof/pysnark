@@ -16,4 +16,5 @@ examples/test/*
 examples/migrations/*
 examples/truffle-config.js
 examples/test/TestPysnark.sol
+examples/*.zkif
 notebooks/.ipynb_checkpoints/test-checkpoint.ipynb

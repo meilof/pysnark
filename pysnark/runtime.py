@@ -11,6 +11,7 @@ backends = [
     ["libsnarkgg",  "pysnark.libsnark.backendgg"],
     ["qaptools",    "pysnark.qaptools.backend"],
     ["snarkjs",     "pysnark.snarkjsbackend"],
+    ["zkinterface", "pysnark.zkinterface.backend"],
     ["nobackend",   "pysnark.nobackend"]
 ]
 

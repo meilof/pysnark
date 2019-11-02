@@ -23,6 +23,7 @@ Features:
 * Pure Python 3.*; libsnark and qaptools backends supported on Windows/Linux/Mac OS
 * Automatically produce Solidity smart contracts
 * Automatically produce snarkjs circuit+witness or verification key+proof+public values
+* Automatically produce [zkinterface](https://github.com/QED-it/zkinterface) file for computation
 * Support for [integer arithmetic](https://github.com/meilof/pysnark/blob/master/pysnark/runtime.py#L179), [linear algebra](https://github.com/meilof/pysnark/blob/master/pysnark/linalg.py#L3), [arrays with conditional indexing](https://github.com/meilof/pysnark/blob/master/pysnark/array.py#L36), [if statements](https://github.com/meilof/pysnark/blob/master/pysnark/branching.py#L10) and [branching](https://github.com/meilof/pysnark/blob/master/pysnark/branching.py#L132), and [hashing](https://github.com/meilof/pysnark/blob/master/pysnark/hash.py#L61); see provided [examples](https://github.com/meilof/pysnark/tree/master/examples)
 
 PySNARK may be used for non-commercial, experimental and research purposes; see `LICENSE.md` for details. 
@@ -104,6 +105,26 @@ $ snarkjs generatecall
 ...
 ```
 
+## Using PySNARK (zkinterface backend)
+
+PySNARK with the `zkinteface` backend automatically produces a file `computation.zkif` containing the circuit, witness, and constraint system for the computation.
+
+```
+$ cd examples
+$ PYSNARK_BACKEND=zkinterface python3 cube.py 33
+The cube of 33 is 35937
+*** zkinterface: writing circuit
+*** zkinterface: writing witness
+*** zkinterface: writing constraints
+*** zkinterface circuit, witness, constraints written to 'computation.zkif', size 656
+```
+
+The contents of the file can be printed with the `print` example program provided with zkinterface:
+
+```
+$ cargo run --bin print   < /path/to/computation.zkif 
+...
+```
 
 ## Using PySNARK (qaptools backend)
 
