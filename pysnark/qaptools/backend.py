@@ -140,7 +140,7 @@ def one():
     return Sig([(1, vc_ctx+"/onex")])
 
 def fieldinverse(val):
-    return int(gmpy.invert(val, vc_p))
+    return int(pysnark.gmpy.invert(val, vc_p))
 
 def get_modulus():
     return vc_p
