@@ -153,6 +153,7 @@ PySNARK produces the following files:
     * `pysnark_ek_main`: zk-SNARK evaluation
      key for the main function of the computation
     * `pysnark_eqs_main`: equations for the main function of the computation
+    * `pysnark_masterpk`: master public key
 * Files that the trusted party should distribute to verifiers:
     * `pysnark_schedule`: schedule of functions called in the computation
     * `pysnark_masterpk`: master public key
