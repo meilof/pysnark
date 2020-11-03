@@ -55,17 +55,154 @@ constraints = []
 def add_constraint(v, w, y):
     constraints.append([v,w,y])
     
-def lcstr(k,v):
-    return '    "' + str(k if k>=0 else len(pubvals)-k) + '": "' + str(v%snarkjsp) + '"'
-    
 def prove():
-    wfile = open("witness.json", "w")
-    print('[', file=wfile)
-    print('  "1",', file=wfile)
-    print(',\n'.join(['  "'+str(val)+'"' for val in pubvals+privvals]), file=wfile)
-    print(']', file=wfile)
+    wfile = open("witness.wtns", "wb")
+
+    def wwriteval(val, len):
+        wfile.write(bytes([(val>>(i*8)) & 255 for i in range(len)]))
+
+    # 4 bytes: "wtns"
+    wfile.write(bytes("wtns", encoding="Latin-1"))
+
+    # 4 bytes: 02000000 (versienummer)
+    wwriteval(2, 4)
+
+    # 4 bytes: 02000000 (aantal secties)
+    wwriteval(2, 4)
+
+    # 4 bytes: 01000000 (sectie #1)
+    wwriteval(1, 4)
+
+    # 8 bytes: 28000000 000000 (lengte sectie #1: 40 bytes)
+    wwriteval(40, 8)
+
+    # 4 bytes: 20000000 (lengte modulus: 32 bytes)
+    wwriteval(32, 4)
+
+    # 32 bytes: 010000F0 93F5E143 9170B979 48E83328 5D588181 B64550B8 29A031E1 724E6430 (modulus)
+    wwriteval(snarkjsp, 32)
+
+    # 4 bytes: 06000000 (aantal getallen in witness)
+    wwriteval(len(pubvals)+len(privvals)+1, 4)
+
+    # 4 bytes: 02000000 (sectie #2)
+    wwriteval(2, 4)
+
+    # 8 bytes: C0000000 00000000 (lengte sectie #2: 192=32*6)
+    wwriteval((len(pubvals)+len(privvals)+1)*32, 8)
+
+    # 32 bytes: 01000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 (eerste witness)
+    wwriteval(1, 32)
+    for val in pubvals: wwriteval(val, 32)
+    for val in privvals: wwriteval(val, 32)
+
     wfile.close()
-          
+
+    cfile = open("circuit.r1cs", "wb")
+
+    def cwriteval(val, len):
+        cfile.write(bytes([(val>>(i*8)) & 255 for i in range(len)]))
+
+    # 4 bytes: "r1cs"
+    cfile.write(bytes("r1cs", encoding="Latin-1"))
+
+    # 01000000 versienummer
+    cwriteval(1, 4)
+
+    # 03000000 aantal secties
+    cwriteval(3, 4)
+
+    # 01000000 sectie 1
+    cwriteval(1, 4)
+
+    # 40000000 00000000 lengte 64
+    cwriteval(64, 8)
+
+    # 20000000 lengte modulus=32 bytes
+    cwriteval(32, 4)
+
+    # 010000F0 93F5E143 9170B979 48E83328 5D588181 B64550B8 29A031E1 724E6430 modulus
+    cwriteval(snarkjsp, 32)
+
+    # 06000000 nvars=6
+    cwriteval(len(privvals)+len(pubvals)+1, 4)
+
+    # 01000000 noutputs=1
+    cwriteval(len(pubvals), 4)
+
+    # 00000000 npubinputs=0
+    cwriteval(0, 4)
+
+    # 02000000 nprivinputs=2
+    cwriteval(0, 4)
+
+    # 07000000 00000000 nlabels=7
+    cwriteval(0, 8) # ???
+
+    # 03000000 nconstraints=3
+    cwriteval(len(constraints), 4)
+
+    # 02000000 sectie 2
+    cwriteval(2, 4)
+
+    # D4010000 00000000 lengte 468
+    nlcs = sum([len(c[0].lc)+len(c[1].lc)+len(c[2].lc) for c in constraints])
+    cwriteval(12*len(constraints)+36*nlcs, 8)  # ???
+
+    # c1:v
+    # 01000000 ncoeffs
+    # 02000000 var
+    # 000000F0 93F5E143 9170B979 48E83328 5D588181 B64550B8 29A031E1 724E6430 val
+    # c1:w
+    # 01000000 ncoeffs
+    # 02000000
+    # 01000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 val
+    # c1:z
+    # 02000000 ncoeffs
+    # 03000000 var
+    # 01000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 val
+    # 04000000 var
+    # 000000F0 93F5E143 9170B979 48E83328 5D588181 B64550B8 29A031E1 724E6430 val
+
+    def writefac(k,v):
+        cwriteval(k if k >= 0 else len(pubvals) - k, 4)
+        cwriteval(v % snarkjsp, 32)
+
+    for c in constraints:
+        cwriteval(len(c[0].lc), 4)
+        for (k,v) in c[0].lc.items(): writefac(k, v)
+        cwriteval(len(c[1].lc), 4)
+        for (k,v) in c[1].lc.items(): writefac(k, v)
+        cwriteval(len(c[2].lc), 4)
+        for (k,v) in c[2].lc.items(): writefac(k, v)
+
+
+    # 03000000 sectie 3
+    cwriteval(3, 4)
+
+    # 30000000 00000000 lengte 48
+    cwriteval(8*(len(privvals)+len(pubvals)+1), 8)
+
+    for i in range(len(privvals)+len(pubvals)+1):
+        # 00000000 00000000 index 0
+        cwriteval(0, 8)
+#
+#
+# [ -1*main.a ] * [ main.a ] - [ main.b + -1*main.int[0] ] = 0
+# [ -1 main.int[0] ] * [ main.int[0] ] - [ main.b + -1*main.int[1] ] = 0
+# [ -1*main.int[1] ] * [ main.int[1] ] - [ -1*main.c|main.int[2] +main.b ] = 0
+#
+# main.a=3
+# main.b=11
+# main.c=168932
+# main.int[0]=20
+# main.int[1]=411
+# main.int[2]=168932
+#
+# input a=3, b=11
+
+    cfile.close()
+
     cfile = open("circuit.json", "w")
     print('{', file=cfile)
     print('  "signals": [', file=cfile)
@@ -75,19 +212,7 @@ def prove():
     print('  ],', file=cfile)
     print('  "constraints": [', file=cfile)
     
-    for i in range(len(constraints)):
-        print('  [', file=cfile)
-        print('    {', file=cfile)
-        print(',\n'.join([lcstr(k,v) for (k,v) in constraints[i][0].lc.items()]), file=cfile)
-        print('    },', file=cfile)
-        print('    {', file=cfile)
-        print(',\n'.join([lcstr(k,v) for (k,v) in constraints[i][1].lc.items()]), file=cfile)
-        print('    },', file=cfile)
-        print('    {', file=cfile)
-        print(',\n'.join([lcstr(k,v) for (k,v) in constraints[i][2].lc.items()]), file=cfile)
-        print('    }', file=cfile)
-        print('  ]' + (',' if i!=len(constraints)-1 else ''), file=cfile)
-        
+
     print('  ],', file=cfile)
     print('  "nPubInputs": 0,', file=cfile)
     print('  "nOutputs": ' + str(len(pubvals)) + ',', file=cfile)
