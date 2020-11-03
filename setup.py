@@ -3,7 +3,7 @@
 from setuptools import setup
 
 setup(name='PySNARK',
-      version='0.3',
+      version='0.3.1',
       description='Python zk-SNARK execution environment',
       author='Meilof Veeningen',
       author_email='meilof@gmail.com',

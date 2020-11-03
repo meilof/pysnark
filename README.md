@@ -1,5 +1,9 @@
 # PySNARK
 
+Recent news:
+
+*03.11.2020*: updated to latest snarkjs
+
 *(This is a re-write of the original version of PySNARK, still available [here](https://github.com/Charterhouse/pysnark).)*
 
 PySNARK lets you program zk-SNARKs (aka verifiable computations) directly in Python 3. For example, the following code runs a SNARK program to compute a cube of a number, generates key material, generates a proof, and verifies it:
@@ -21,6 +25,7 @@ PySNARK can use [qaptools](https://github.com/Charterhouse/qaptools) or [libsnar
 Features:
 
 * Pure Python 3.*; libsnark and qaptools backends supported on Windows/Linux/Mac OS
+* Can be used in combination with snarkjs as a drop-in replacement for circom
 * Automatically produce Solidity smart contracts
 * Automatically produce snarkjs circuit+witness or verification key+proof+public values
 * Automatically produce [zkinterface](https://github.com/QED-it/zkinterface) file for computation
@@ -80,8 +85,6 @@ PYSNARK_BACKEND=libsnarkgg python3 cube.py 3
 
 ### Combining with snarkjs
 
-**Note: this feature has been recently updated, please use the latest Git version**
-
 PySNARK with the libsnarkgg backend can automatically produce snarkjs `public.json`, `proof.json` and `verification_key.json` files for the performed verifiable computation:
 
 ```
@@ -97,8 +100,6 @@ meilofs-air:examples meilof$ snarkjs groth16 verify verification_key.json public
 ```
 
 ## Using PySNARK (snarkjs backend)
-
-**Note: this feature has been recently updated, please use the latest Git version**
 
 PySNARK can be used in combination with snarkjs as a drop-in replacement of programming circuits using circom. PySNARK generates the `circuit.r1cs` file corresponding to the computation constraints and the `witness.wtns` file containing the values for the current computation:
 

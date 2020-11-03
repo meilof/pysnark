@@ -1,5 +1,9 @@
 # PySNARK
 
+Recent news:
+
+*03.11.2020*: updated to latest snarkjs
+
 *(This is a re-write of the original version of PySNARK, still available [here](https://github.com/Charterhouse/pysnark).)*
 
 PySNARK lets you program zk-SNARKs (aka verifiable computations) directly in Python 3. For example, the following code runs a SNARK program to compute a cube of a number, generates key material, generates a proof, and verifies it:
@@ -20,9 +24,11 @@ PySNARK can use [qaptools](https://github.com/Charterhouse/qaptools) or [libsnar
 
 Features:
 
-* Support Unix platforms (Linux, Mac OS X, ...) and Windows
+* Pure Python 3.*; libsnark and qaptools backends supported on Windows/Linux/Mac OS
+* Can be used in combination with snarkjs as a drop-in replacement for circom
 * Automatically produce Solidity smart contracts
 * Automatically produce snarkjs circuit+witness or verification key+proof+public values
+* Automatically produce [zkinterface](https://github.com/QED-it/zkinterface) file for computation
 * Support for [integer arithmetic](https://github.com/meilof/pysnark/blob/master/pysnark/runtime.py#L179), [linear algebra](https://github.com/meilof/pysnark/blob/master/pysnark/linalg.py#L3), [arrays with conditional indexing](https://github.com/meilof/pysnark/blob/master/pysnark/array.py#L36), [if statements](https://github.com/meilof/pysnark/blob/master/pysnark/branching.py#L10) and [branching](https://github.com/meilof/pysnark/blob/master/pysnark/branching.py#L132), and [hashing](https://github.com/meilof/pysnark/blob/master/pysnark/hash.py#L61); see provided [examples](https://github.com/meilof/pysnark/tree/master/examples)
 
 PySNARK may be used for non-commercial, experimental and research purposes; see `LICENSE.md` for details. 
@@ -69,41 +75,72 @@ By default, if available, the libsnark backend will be used. In this case, the f
 * `pysnark_vk`: key material to verify proofs for this computation
 * `pysnark_log`: computation log that can be verified with the `pysnark_vk` key: number of inputs/outputs, followed by the inputs/outputs themselves, followed by a proof that the input/outputs were correctly computed 
 
+PySNARK with libsnark can use the more recent Groth16 proof system instead of traditional Pinocchio proofs by using the libsnarkgg backend:
+
+```
+cd examples
+rm pysnark_*
+PYSNARK_BACKEND=libsnarkgg python3 cube.py 3
+```
 
 ### Combining with snarkjs
 
-PySNARK with the libsnark backend can automatically produce snarkjs `public.json`, `proof.json` and `verification_key.json` files for the performed verifiable computation:
+PySNARK with the libsnarkgg backend can automatically produce snarkjs `public.json`, `proof.json` and `verification_key.json` files for the performed verifiable computation:
 
 ```
-meilofs-air:examples meilof$ python3 cube.py 33
+meilofs-air:examples meilof$ PYSNARK_BACKEND=libsnarkgg python3 cube.py 33
 The cube of 33 is 35937
 *** Trying to read pysnark_ek
 *** PySNARK: generating proof pysnark_log (sat=True, #io=2, #witness=2, #constraint=3)
 *** Public inputs: 33 35937
 *** Verification status: True
-meilofs-air:examples meilof$ python3 -m pysnark.libsnark.tosnarkjs
-meilofs-air:examples meilof$ snarkjs verify
-OK
-$ snarkjs generateverifier
-$ snarkjs generatecall
+meilofs-air:examples meilof$ python3 -m pysnark.libsnark.tosnarkjsgg
+meilofs-air:examples meilof$ snarkjs groth16 verify verification_key.json public.json proof.json
+[INFO]  snarkJS: OK!
 ```
 
 ## Using PySNARK (snarkjs backend)
 
+PySNARK can be used in combination with snarkjs as a drop-in replacement of programming circuits using circom. PySNARK generates the `circuit.r1cs` file corresponding to the computation constraints and the `witness.wtns` file containing the values for the current computation:
+
 ```
-$ cd examples
 $ PYSNARK_BACKEND=snarkjs python3 cube.py 33
 The cube of 33 is 35937
-witness.json and circuit.json written; use 'snarkjs setup', 'snarkjs proof', and 'snarkjs verify'
-$ snarkjs setup
-$ snarkjs proof
-$ snarkjs verify
-OK
-$ snarkjs generateverifier
-$ snarkjs generatecall
+snarkjs witness.wtns and circuit.r1cs written; see readme
+$ snarkjs powersoftau new bn128 12 pot.ptau -v
 ...
+$ snarkjs powersoftau prepare phase2 pot.ptau pott.ptau -v
+...
+$ snarkjs zkey new circuit.r1cs pott.ptau circuit.zkey
+...
+$ snarkjs zkey export verificationkey circuit.zkey verification_key.json
+$ snarkjs groth16 prove circuit.zkey witness.wtns proof.json public.json
+$ snarkjs groth16 verify verification_key.json public.json proof.json
+[INFO]  snarkJS: OK!
+$ snarkjs zkey export solidityverifier circuit.zkey verifier.sol
+$ snarkjs zkey export soliditycalldata public.json proof.json
 ```
 
+## Using PySNARK (zkinterface backend)
+
+PySNARK with the `zkinterface` backend automatically produces a file `computation.zkif` containing the circuit, witness, and constraint system for the computation.
+
+```
+$ cd examples
+$ PYSNARK_BACKEND=zkinterface python3 cube.py 33
+The cube of 33 is 35937
+*** zkinterface: writing circuit
+*** zkinterface: writing witness
+*** zkinterface: writing constraints
+*** zkinterface circuit, witness, constraints written to 'computation.zkif', size 656
+```
+
+The contents of the file can be printed with the `print` example program provided with zkinterface:
+
+```
+$ cargo run --bin print   < /path/to/computation.zkif 
+...
+```
 
 ## Using PySNARK (qaptools backend)
 
@@ -132,6 +169,7 @@ PySNARK produces the following files:
     * `pysnark_ek_main`: zk-SNARK evaluation
      key for the main function of the computation
     * `pysnark_eqs_main`: equations for the main function of the computation
+    * `pysnark_masterpk`: master public key
 * Files that the trusted party should distribute to verifiers:
     * `pysnark_schedule`: schedule of functions called in the computation
     * `pysnark_masterpk`: master public key
@@ -218,6 +256,8 @@ When a particular functon is used multiple times in a verifiable computation, us
 ## Using PySNARK for smart contracts 
 
 The `qaptools` backand of PySNARK supports the automatic generation of Solidity smart contracts that verify the correctness of the given zk-SNARK.
+
+(Smart contracts can also be implemented using snarkjs with the snarkjs backend, see above.)
 
 First, run a verifiable computation using the `qaptools` backend:
 
