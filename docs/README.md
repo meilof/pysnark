@@ -2,7 +2,7 @@
 
 Recent news:
 
-*03.11.2020*: updated to latest snarkjs
+**03.11.2020**: updated to latest snarkjs
 
 *(This is a re-write of the original version of PySNARK, still available [here](https://github.com/Charterhouse/pysnark).)*
 
