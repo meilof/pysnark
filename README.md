@@ -70,39 +70,54 @@ By default, if available, the libsnark backend will be used. In this case, the f
 * `pysnark_vk`: key material to verify proofs for this computation
 * `pysnark_log`: computation log that can be verified with the `pysnark_vk` key: number of inputs/outputs, followed by the inputs/outputs themselves, followed by a proof that the input/outputs were correctly computed 
 
+PySNARK with libsnark can use the more recent Groth16 proof system instead of traditional Pinocchio proofs by using the libsnarkgg backend:
+
+```
+cd examples
+rm pysnark_*
+PYSNARK_BACKEND=libsnarkgg python3 cube.py 3
+```
 
 ### Combining with snarkjs
 
-PySNARK with the libsnark backend can automatically produce snarkjs `public.json`, `proof.json` and `verification_key.json` files for the performed verifiable computation:
+**Note: this feature has been recently updated, please use the latest Git version**
+
+PySNARK with the libsnarkgg backend can automatically produce snarkjs `public.json`, `proof.json` and `verification_key.json` files for the performed verifiable computation:
 
 ```
-meilofs-air:examples meilof$ python3 cube.py 33
+meilofs-air:examples meilof$ PYSNARK_BACKEND=libsnarkgg python3 cube.py 33
 The cube of 33 is 35937
 *** Trying to read pysnark_ek
 *** PySNARK: generating proof pysnark_log (sat=True, #io=2, #witness=2, #constraint=3)
 *** Public inputs: 33 35937
 *** Verification status: True
-meilofs-air:examples meilof$ python3 -m pysnark.libsnark.tosnarkjs
-meilofs-air:examples meilof$ snarkjs verify
-OK
-$ snarkjs generateverifier
-$ snarkjs generatecall
+meilofs-air:examples meilof$ python3 -m pysnark.libsnark.tosnarkjsgg
+meilofs-air:examples meilof$ snarkjs groth16 verify verification_key.json public.json proof.json
+[INFO]  snarkJS: OK!
 ```
 
 ## Using PySNARK (snarkjs backend)
 
+**Note: this feature has been recently updated, please use the latest Git version**
+
+PySNARK can be used in combination with snarkjs as a drop-in replacement of programming circuits using circom. PySNARK generates the `circuit.r1cs` file corresponding to the computation constraints and the `witness.wtns` file containing the values for the current computation:
+
 ```
-$ cd examples
 $ PYSNARK_BACKEND=snarkjs python3 cube.py 33
 The cube of 33 is 35937
-witness.json and circuit.json written; use 'snarkjs setup', 'snarkjs proof', and 'snarkjs verify'
-$ snarkjs setup
-$ snarkjs proof
-$ snarkjs verify
-OK
-$ snarkjs generateverifier
-$ snarkjs generatecall
+snarkjs witness.wtns and circuit.r1cs written; see readme
+$ snarkjs powersoftau new bn128 12 pot.ptau -v
 ...
+$ snarkjs powersoftau prepare phase2 pot.ptau pott.ptau -v
+...
+$ snarkjs zkey new circuit.r1cs pott.ptau circuit.zkey
+...
+$ snarkjs zkey export verificationkey circuit.zkey verification_key.json
+$ snarkjs groth16 prove circuit.zkey witness.wtns proof.json public.json
+$ snarkjs groth16 verify verification_key.json public.json proof.json
+[INFO]  snarkJS: OK!
+$ snarkjs zkey export solidityverifier circuit.zkey verifier.sol
+$ snarkjs zkey export soliditycalldata public.json proof.json
 ```
 
 ## Using PySNARK (zkinterface backend)
@@ -240,6 +255,8 @@ When a particular functon is used multiple times in a verifiable computation, us
 ## Using PySNARK for smart contracts 
 
 The `qaptools` backand of PySNARK supports the automatic generation of Solidity smart contracts that verify the correctness of the given zk-SNARK.
+
+(Smart contracts can also be implemented using snarkjs with the snarkjs backend, see above.)
 
 First, run a verifiable computation using the `qaptools` backend:
 
