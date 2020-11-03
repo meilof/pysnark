@@ -186,39 +186,7 @@ def prove():
     for i in range(len(privvals)+len(pubvals)+1):
         # 00000000 00000000 index 0
         cwriteval(0, 8)
-#
-#
-# [ -1*main.a ] * [ main.a ] - [ main.b + -1*main.int[0] ] = 0
-# [ -1 main.int[0] ] * [ main.int[0] ] - [ main.b + -1*main.int[1] ] = 0
-# [ -1*main.int[1] ] * [ main.int[1] ] - [ -1*main.c|main.int[2] +main.b ] = 0
-#
-# main.a=3
-# main.b=11
-# main.c=168932
-# main.int[0]=20
-# main.int[1]=411
-# main.int[2]=168932
-#
-# input a=3, b=11
 
     cfile.close()
 
-    cfile = open("circuit.json", "w")
-    print('{', file=cfile)
-    print('  "signals": [', file=cfile)
-    print('    { "names": [ "one" ] },', file=cfile)
-    print(',\n'.join(['    { "names": [ "p' + str(i+1) + '" ] }' for i in range(len(pubvals))]) + (',' if len(privvals)!=0 else ''), file=cfile)
-    print(',\n'.join(['    { "names": [ "w' + str(i+1) + '" ] }' for i in range(len(privvals))]), file=cfile)
-    print('  ],', file=cfile)
-    print('  "constraints": [', file=cfile)
-    
-
-    print('  ],', file=cfile)
-    print('  "nPubInputs": 0,', file=cfile)
-    print('  "nOutputs": ' + str(len(pubvals)) + ',', file=cfile)
-    print('  "nVars": ' + str(len(pubvals)+len(privvals)+1), file=cfile)
-    print('}', file=cfile)
-
-    cfile.close()
-    
-    print("witness.json and circuit.json written; use 'snarkjs setup', 'snarkjs proof', and 'snarkjs verify'", file=sys.stderr)
+    print("snarkjs witness.wtns and circuit.r1cs written; see readme", file=sys.stderr)
