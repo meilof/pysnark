@@ -125,7 +125,7 @@ def restore_guard(bak):
 def guarded(cond):
     def _guarded(fn):
         def __guarded(*args, **kwargs):
-            bak = enable_guard(cond)
+            bak = add_guard(cond)
             
             try:
                 ret = fn(*args, **kwargs)
@@ -518,5 +518,5 @@ def final():
 
 import atexit
 from .atexitmaybe import maybe
-# lambds used here to make sure that backend variable is read at the end
+# lambda used here to make sure that backend variable is read at the end
 atexit.register(maybe(final))
