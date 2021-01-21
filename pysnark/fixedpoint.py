@@ -55,6 +55,7 @@ class LinCombFxp(LinComb):
         return float(val)/(1<<LinCombFxp.res)
     
     def val(self):
+        (self-PubValFxp(self.value, False)).assert_zero()
         return LinCombFxp.tofloat(self.value)
 
     def __repr__(self):
