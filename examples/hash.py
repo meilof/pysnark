@@ -15,8 +15,6 @@ for w in witness: w.assert_bool()
 # compute hash as a verifiable computation
 hashed = ggh_hash(witness)
 
-(PrivVal(1)+PrivVal(-3815100955245901773194254220410253439371965309251566846530536701111841134788)+PrivVal(-10)).val()
-
 hashed.assert_eq(3815100955245901773194254220410253439371965309251566846530536701111841134788)
 # enforce that the hash is equal to intended hash, public input to computation
 hashed.assert_eq(PubVal(3815100955245901773194254220410253439371965309251566846530536701111841134788))
