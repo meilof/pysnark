@@ -476,18 +476,15 @@ def PubVal(val):
 def PrivVal(val):
     return LinComb(val, backend.privval(val))
 
-def for_each_in(cls, f, struct):
+def for_each_in(converter, struct):
     """ Recursively traversing all lists and tuples in struct, apply f to each
         element that is an instance of cls. Returns structure with f applied. """
     if isinstance(struct, list):
-        return list(map(lambda x: for_each_in(cls, f, x), struct))
+        return list(map(lambda x: for_each_in(converter, x), struct))
     elif isinstance(struct, tuple):
-        return tuple(map(lambda x: for_each_in(cls, f, x), struct))
+        return tuple(map(lambda x: for_each_in(converter, x), struct))
     else:
-        if isinstance(struct, cls):
-            return f(struct)
-        else:
-            return struct
+        return converter(struct)
 
 """
 Turns the given function into a SNARK. Input and outputs to the function are
@@ -503,9 +500,9 @@ def snark(fn):
     def snark__(*args, **kwargs):
         if kwargs: raise ValueError("@snark-decorated functions cannot have keyword arguments")
 
-        argscopy = for_each_in(int, lambda x: PubVal(x), args)
+        argscopy = for_each_in(lambda x: PubVal(x) if isinstance(x,int) else x, args)
         ret = fn(*argscopy, **kwargs)
-        retcopy = for_each_in(LinComb, lambda x: x.val(), ret)
+        retcopy = for_each_in(lambda x: x.val() if isinstance(x,LinComb) else x, ret)
 
         return retcopy
         
