@@ -72,8 +72,12 @@ def prove(do_keygen=True, do_write=True, do_print=True):
     
     proof=prover(keypair.pk, pubvals, privvals);
     if do_write: write_proof(proof, pubvals, "pysnark_log")
+		
+    mod = libsnark.get_modulus()
+    modd2 = mod//2
+    def rounded(val): return val if val<=modd2 else val-mod
 
-    if do_print: print("*** Public inputs: " + " ".join([str(pubvals.at(i)) for i in range(pubvals.size())]), file=sys.stderr)
+    if do_print: print("*** Public inputs: " + " ".join([str(rounded(pubvals.at(i))) for i in range(pubvals.size())]), file=sys.stderr)
     if do_print: print("*** Verification status:", verifier_strong_IC(keypair.vk, pubvals, proof), file=sys.stderr)
     
     return (keypair.vk, proof, pubvals)
