@@ -1,4 +1,5 @@
 import flatbuffers
+import math
 import sys
 
 import pysnark.gmpy as gmpy
@@ -12,6 +13,12 @@ import pysnark.zkinterface.Variables as Variables
 import pysnark.zkinterface.Witness as Witness
 
 modulus=21888242871839275222246405745257275088548364400416034343698204186575808495617
+BL=math.ceil(modulus.bit_length()/8)
+
+def set_modulus(new_modulus):
+	global modulus, BL
+	modulus = new_modulus
+	BL=math.ceil(modulus.bit_length()/8)
 
 class LinearCombination:
     def __init__(self, lc): self.lc = lc
@@ -70,12 +77,12 @@ def write_varlist(builder, vals, offset):
         builder.PrependUint64(i+offset)
     ixs = builder.EndVector(len(vals))
     
-    Variables.VariablesStartValuesVector(builder, 32*len(vals))
+    Variables.VariablesStartValuesVector(builder, BL*len(vals))
     for i in reversed(range(len(vals))):
         val=vals[i]%modulus
-        for j in reversed(range(32)):
+        for j in reversed(range(BL)):
             builder.PrependByte((val>>(j*8))&255)
-    vals = builder.EndVector(32*len(vals))
+    vals = builder.EndVector(BL*len(vals))
         
     Variables.VariablesStart(builder)
     Variables.VariablesAddVariableIds(builder, ixs)
@@ -96,10 +103,10 @@ def prove():
 
     vars = write_varlist(builder, pubvals, 1)
     
-    Circuit.CircuitStartFieldMaximumVector(builder, 32)
-    for i in reversed(range(32)):
+    Circuit.CircuitStartFieldMaximumVector(builder, BL)
+    for i in reversed(range(BL)):
         builder.PrependByte((modulus>>(i*8))&255)
-    maxi = builder.EndVector(32)
+    maxi = builder.EndVector(BL)
     
     Circuit.CircuitStart(builder)
     Circuit.CircuitAddConnections(builder, vars)
@@ -151,12 +158,12 @@ def prove():
             builder.PrependUint64(varix)
         vars = builder.EndVector(len(varls))
         
-        Variables.VariablesStartValuesVector(builder, 32*len(varls))
+        Variables.VariablesStartValuesVector(builder, BL*len(varls))
         for i in reversed(range(len(varls))):
-            for j in reversed(range(32)):
+            for j in reversed(range(BL)):
                 val=lc.lc[varls[i]]%modulus
                 builder.PrependByte((val>>(j*8))&255)
-        vals = builder.EndVector(32*len(varls))
+        vals = builder.EndVector(BL*len(varls))
         
         Variables.VariablesStart(builder)
         Variables.VariablesAddVariableIds(builder, vars)
