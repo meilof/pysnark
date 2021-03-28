@@ -3,12 +3,14 @@
 # namespace: zkinterface
 
 import flatbuffers
+from flatbuffers.compat import import_numpy
+np = import_numpy()
 
-# /// A single R1CS constraint between variables.
-# ///
-# /// - Represents the linear combinations of variables A, B, C such that:
-# ///       (A) * (B) = (C)
-# /// - A linear combination is given as a sequence of (variable ID, coefficient).
+# A single R1CS constraint between variables.
+#
+# - Represents the linear combinations of variables A, B, C such that:
+#       (A) * (B) = (C)
+# - A linear combination is given as a sequence of (variable ID, coefficient).
 class BilinearConstraint(object):
     __slots__ = ['_tab']
 
@@ -19,6 +21,10 @@ class BilinearConstraint(object):
         x.Init(buf, n + offset)
         return x
 
+    @classmethod
+    def BilinearConstraintBufferHasIdentifier(cls, buf, offset, size_prefixed=False):
+        return flatbuffers.util.BufferHasIdentifier(buf, offset, b"\x7A\x6B\x69\x66", size_prefixed=size_prefixed)
+
     # BilinearConstraint
     def Init(self, buf, pos):
         self._tab = flatbuffers.table.Table(buf, pos)
@@ -28,7 +34,7 @@ class BilinearConstraint(object):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(4))
         if o != 0:
             x = self._tab.Indirect(o + self._tab.Pos)
-            from .Variables import Variables
+            from zkinterface.Variables import Variables
             obj = Variables()
             obj.Init(self._tab.Bytes, x)
             return obj
@@ -39,7 +45,7 @@ class BilinearConstraint(object):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(6))
         if o != 0:
             x = self._tab.Indirect(o + self._tab.Pos)
-            from .Variables import Variables
+            from zkinterface.Variables import Variables
             obj = Variables()
             obj.Init(self._tab.Bytes, x)
             return obj
@@ -50,7 +56,7 @@ class BilinearConstraint(object):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(8))
         if o != 0:
             x = self._tab.Indirect(o + self._tab.Pos)
-            from .Variables import Variables
+            from zkinterface.Variables import Variables
             obj = Variables()
             obj.Init(self._tab.Bytes, x)
             return obj

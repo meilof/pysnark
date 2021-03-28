@@ -3,6 +3,8 @@
 # namespace: zkinterface
 
 import flatbuffers
+from flatbuffers.compat import import_numpy
+np = import_numpy()
 
 class Root(object):
     __slots__ = ['_tab']
@@ -13,6 +15,10 @@ class Root(object):
         x = Root()
         x.Init(buf, n + offset)
         return x
+
+    @classmethod
+    def RootBufferHasIdentifier(cls, buf, offset, size_prefixed=False):
+        return flatbuffers.util.BufferHasIdentifier(buf, offset, b"\x7A\x6B\x69\x66", size_prefixed=size_prefixed)
 
     # Root
     def Init(self, buf, pos):

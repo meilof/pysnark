@@ -3,16 +3,18 @@
 # namespace: zkinterface
 
 import flatbuffers
+from flatbuffers.compat import import_numpy
+np = import_numpy()
 
-# /// A description of multiple variables.
-# ///
-# /// - Each variable is identified by a numerical ID.
-# /// - Each variable can be assigned a concrete value.
-# /// - In `Circuit.connections`, the IDs indicate which variables are
-# ///   meant to be shared as inputs or outputs of a sub-circuit.
-# /// - During witness generation, the values form the assignment to the variables.
-# /// - In `BilinearConstraint` linear combinations, the values are the coefficients
-# ///   applied to variables in a linear combination.
+# A description of multiple variables.
+#
+# - Each variable is identified by a numerical ID.
+# - Each variable can be assigned a concrete value.
+# - In `CircuitHeader.instance_variables`, the IDs indicate which variables are
+#   meant to be shared as inputs or outputs of a sub-circuit.
+# - During witness generation, the values form the assignment to the variables.
+# - In `BilinearConstraint` linear combinations, the values are the coefficients
+#   applied to variables in a linear combination.
 class Variables(object):
     __slots__ = ['_tab']
 
@@ -23,14 +25,18 @@ class Variables(object):
         x.Init(buf, n + offset)
         return x
 
+    @classmethod
+    def VariablesBufferHasIdentifier(cls, buf, offset, size_prefixed=False):
+        return flatbuffers.util.BufferHasIdentifier(buf, offset, b"\x7A\x6B\x69\x66", size_prefixed=size_prefixed)
+
     # Variables
     def Init(self, buf, pos):
         self._tab = flatbuffers.table.Table(buf, pos)
 
-# /// The IDs of the variables.
-# ///
-# /// - IDs must be unique within a constraint system.
-# /// - The ID 0 always represents the constant variable one.
+    # The IDs of the variables.
+    #
+    # - IDs must be unique within a constraint system.
+    # - The ID 0 always represents the constant variable one.
     # Variables
     def VariableIds(self, j):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(4))
@@ -53,17 +59,22 @@ class Variables(object):
             return self._tab.VectorLen(o)
         return 0
 
-# /// Optional: values assigned to variables.
-# ///
-# /// - Values are finite field elements as defined by `circuit.field_maximum`.
-# /// - Elements are represented in canonical little-endian form.
-# /// - Elements appear in the same order as variable_ids.
-# /// - Multiple elements are concatenated in a single byte array.
-# /// - The element representation may be truncated and its size shorter
-# ///   than `circuit.field_maximum`. Truncated bytes are treated as zeros.
-# /// - The size of an element representation is determined by:
-# ///
-# ///     element size = values.length / variable_ids.length
+    # Variables
+    def VariableIdsIsNone(self):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(4))
+        return o == 0
+
+    # Optional: values assigned to variables.
+    #
+    # - Values are finite field elements as defined by `header.field_maximum`.
+    # - Elements are represented in canonical little-endian form.
+    # - Elements appear in the same order as variable_ids.
+    # - Multiple elements are concatenated in a single byte array.
+    # - The element representation may be truncated and its size shorter
+    #   than `header.field_maximum`. Truncated bytes are treated as zeros.
+    # - The size of an element representation is determined by:
+    #
+    #     element size = values.length / variable_ids.length
     # Variables
     def Values(self, j):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(6))
@@ -86,11 +97,16 @@ class Variables(object):
             return self._tab.VectorLen(o)
         return 0
 
-# /// Optional: Any complementary info that may be useful to the recipient.
-# ///
-# /// Example: human-readable names.
-# /// Example: custom variable typing information (`is_bit`, ...).
-# /// Example: a Merkle authentication path in some custom format.
+    # Variables
+    def ValuesIsNone(self):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(6))
+        return o == 0
+
+    # Optional: Any complementary info that may be useful to the recipient.
+    #
+    # Example: human-readable names.
+    # Example: custom variable typing information (`is_bit`, ...).
+    # Example: a Merkle authentication path in some custom format.
     # Variables
     def Info(self, j):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(8))
@@ -98,7 +114,7 @@ class Variables(object):
             x = self._tab.Vector(o)
             x += flatbuffers.number_types.UOffsetTFlags.py_type(j) * 4
             x = self._tab.Indirect(x)
-            from .KeyValue import KeyValue
+            from zkinterface.KeyValue import KeyValue
             obj = KeyValue()
             obj.Init(self._tab.Bytes, x)
             return obj
@@ -110,6 +126,11 @@ class Variables(object):
         if o != 0:
             return self._tab.VectorLen(o)
         return 0
+
+    # Variables
+    def InfoIsNone(self):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(8))
+        return o == 0
 
 def VariablesStart(builder): builder.StartObject(3)
 def VariablesAddVariableIds(builder, variableIds): builder.PrependUOffsetTRelativeSlot(0, flatbuffers.number_types.UOffsetTFlags.py_type(variableIds), 0)

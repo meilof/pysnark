@@ -117,7 +117,7 @@ def prove():
     circ = Circuit.CircuitEnd(builder)
     
     Root.RootStart(builder)
-    Root.RootAddMessageType(builder, Message.Message.Circuit)
+    Root.RootAddMessageType(builder, Message.Message.CircuitHeader)
     Root.RootAddMessage(builder, circ)
     root = Root.RootEnd(builder)
         
@@ -194,7 +194,7 @@ def prove():
     r1cs = R1CSConstraints.R1CSConstraintsEnd(builder)
     
     Root.RootStart(builder)
-    Root.RootAddMessageType(builder, Message.Message.R1CSConstraints)
+    Root.RootAddMessageType(builder, Message.Message.ConstraintSystem)
     Root.RootAddMessage(builder, r1cs)
     root = Root.RootEnd(builder)    
     

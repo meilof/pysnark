@@ -3,12 +3,14 @@
 # namespace: zkinterface
 
 import flatbuffers
+from flatbuffers.compat import import_numpy
+np = import_numpy()
 
-# /// Witness represents an assignment of values to variables.
-# ///
-# /// - Does not include variables already given in `Circuit.connections`.
-# /// - Does not include the constant one variable.
-# /// - Multiple such messages are equivalent to the concatenation of `Variables` arrays.
+# Witness represents an assignment of values to variables.
+#
+# - Does not include variables already given in `CircuitHeader.instance_variables`.
+# - Does not include the constant one variable.
+# - Multiple such messages are equivalent to the concatenation of `Variables` arrays.
 class Witness(object):
     __slots__ = ['_tab']
 
@@ -19,6 +21,10 @@ class Witness(object):
         x.Init(buf, n + offset)
         return x
 
+    @classmethod
+    def WitnessBufferHasIdentifier(cls, buf, offset, size_prefixed=False):
+        return flatbuffers.util.BufferHasIdentifier(buf, offset, b"\x7A\x6B\x69\x66", size_prefixed=size_prefixed)
+
     # Witness
     def Init(self, buf, pos):
         self._tab = flatbuffers.table.Table(buf, pos)
@@ -28,7 +34,7 @@ class Witness(object):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(4))
         if o != 0:
             x = self._tab.Indirect(o + self._tab.Pos)
-            from .Variables import Variables
+            from zkinterface.Variables import Variables
             obj = Variables()
             obj.Init(self._tab.Bytes, x)
             return obj

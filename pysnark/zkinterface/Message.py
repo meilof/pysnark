@@ -4,7 +4,8 @@
 
 class Message(object):
     NONE = 0
-    Circuit = 1
-    R1CSConstraints = 2
+    CircuitHeader = 1
+    ConstraintSystem = 2
     Witness = 3
+    Command = 4
 

@@ -1,0 +1,175 @@
+// This is a FlatBuffers schema.
+// See https://google.github.io/flatbuffers/
+
+namespace zkinterface;
+
+
+// ==== Message types that can be exchanged. ====
+
+union Message {
+    CircuitHeader,
+    ConstraintSystem,
+    Witness,
+    Command,
+}
+
+/// A description of a circuit or sub-circuit.
+/// This can be a complete circuit ready for proving,
+/// or a part of a circuit being built.
+table CircuitHeader {
+
+    /// Instance variables. This is also called public inputs to the circuit.
+    ///
+    /// - Variables are allocated by the sender of this message.
+    /// - The same structure must be provided for R1CS and witness generations.
+    /// - Values may be omitted in some contexts, such as in a preprocessing phase.
+    /// - During witness generation, variables must be assigned values.
+    /// - In the particular context of a gadget call, `instance_variables` holds the inputs
+    ///   to the gadget, i.e. variables allocated by the caller that the gadget can
+    ///   refer to. In the context of a gadget response, it holds the outputs of the gadget,
+    ///   i.e. variables allocated by the gadget that the caller can refer to.
+    instance_variables      :Variables;
+
+    /// A variable ID greater than all IDs allocated by the sender of this message.
+    /// The recipient of this message can allocate new IDs >= free_variable_id.
+    free_variable_id        :uint64;
+
+    /// The largest element of the finite field used by the current system.
+    /// A canonical little-endian representation of the field order minus one.
+    /// See `Variables.values` below.
+    field_maximum           :[ubyte];
+
+    /// Optional: Any custom parameter that may influence the circuit construction.
+    ///
+    /// Example: function_name, if a gadget supports multiple function variants.
+    /// Example: the depth of a Merkle tree.
+    /// Counter-example: a Merkle path is not config and belongs in `instance_variables.info`.
+    configuration           :[KeyValue];
+}
+
+/// ConstraintSystem represents constraints to be added to the constraint system.
+///
+/// Multiple such messages are equivalent to the concatenation of `constraints` arrays.
+table ConstraintSystem {
+    constraints             :[BilinearConstraint];
+
+    /// Optional: Any complementary info that may be useful.
+    ///
+    /// Example: human-readable descriptions.
+    /// Example: custom hints to an optimizer or analyzer.
+    info                    :[KeyValue];
+}
+
+/// Witness represents an assignment of values to variables.
+///
+/// - Does not include variables already given in `CircuitHeader.instance_variables`.
+/// - Does not include the constant one variable.
+/// - Multiple such messages are equivalent to the concatenation of `Variables` arrays.
+table Witness {
+    assigned_variables      :Variables;
+}
+
+/// Optional: Command messages can be used to request actions from the receiver. This makes it
+/// possible to write code that works in different environments. Commands and parameters
+/// can be passed over the same byte stream as other messages; if so Command must be the first
+/// message. This reduces the need for environment-specific methods (it can replace CLI --flags, etc).
+table Command {
+    /// For gadget flows.
+    /// Request the generation of a constraint system (or part thereof).
+    /// If true, this must be followed by a CircuitHeader.
+    /// The response must be another CircuitHeader message with a greater `free_variable_id`
+    /// followed by one or more ConstraintSystem messages.
+    constraints_generation  :bool;
+
+    /// For gadget flows.
+    /// Request the generation of a witness (or part thereof).
+    /// If true, this must be followed by a CircuitHeader, and the `instance_variables`
+    /// variables must contain input values.
+    /// The response must be another CircuitHeader message, with a greater `free_variable_id`,
+    /// with output values in `instance_variables`, followed by one or more `Witness` messages.
+    witness_generation      :bool;
+
+    /// Optional: Any complementary parameter that may be useful.
+    parameters              :[KeyValue];
+}
+
+
+// ==== Secondary Types ====
+
+/// A single R1CS constraint between variables.
+///
+/// - Represents the linear combinations of variables A, B, C such that:
+///       (A) * (B) = (C)
+/// - A linear combination is given as a sequence of (variable ID, coefficient).
+table BilinearConstraint {
+    linear_combination_a    :Variables;
+    linear_combination_b    :Variables;
+    linear_combination_c    :Variables;
+}
+
+/// A description of multiple variables.
+///
+/// - Each variable is identified by a numerical ID.
+/// - Each variable can be assigned a concrete value.
+/// - In `CircuitHeader.instance_variables`, the IDs indicate which variables are
+///   meant to be shared as inputs or outputs of a sub-circuit.
+/// - During witness generation, the values form the assignment to the variables.
+/// - In `BilinearConstraint` linear combinations, the values are the coefficients
+///   applied to variables in a linear combination.
+table Variables {
+
+    /// The IDs of the variables.
+    ///
+    /// - IDs must be unique within a constraint system.
+    /// - The ID 0 always represents the constant variable one.
+    variable_ids            :[uint64];
+
+    /// Optional: values assigned to variables.
+    ///
+    /// - Values are finite field elements as defined by `header.field_maximum`.
+    /// - Elements are represented in canonical little-endian form.
+    /// - Elements appear in the same order as variable_ids.
+    /// - Multiple elements are concatenated in a single byte array.
+    /// - The element representation may be truncated and its size shorter
+    ///   than `header.field_maximum`. Truncated bytes are treated as zeros.
+    /// - The size of an element representation is determined by:
+    ///
+    ///     element size = values.length / variable_ids.length
+    values                  :[ubyte];
+
+    /// Optional: Any complementary info that may be useful to the recipient.
+    ///
+    /// Example: human-readable names.
+    /// Example: custom variable typing information (`is_bit`, ...).
+    /// Example: a Merkle authentication path in some custom format.
+    info                    :[KeyValue];
+}
+
+/// Generic key-value for custom attributes.
+/// The key must be a string.
+/// The value can be one of several types.
+table KeyValue {
+    key                     :string;
+    // The value goes into one the following:
+    data                    :[ubyte];
+    text                    :string;
+    number                  :int64;
+}
+
+
+// ==== Flatbuffers details ====
+
+// All message types are encapsulated in the FlatBuffers root table.
+table Root {
+    message                 :Message;
+}
+root_type Root;
+
+// When storing messages to files, this extension and identifier should be used.
+file_extension "zkif";
+file_identifier "zkif"; // a.k.a. magic bytes.
+
+// Message framing:
+//
+// All messages must be prefixed by the size of the message,
+// not including the prefix, as a 4-bytes little-endian unsigned integer.
