@@ -5,9 +5,9 @@ import sys
 import pysnark.gmpy as gmpy
 
 import pysnark.zkinterface.BilinearConstraint as BilinearConstraint
-import pysnark.zkinterface.Circuit as Circuit
+import pysnark.zkinterface.CircuitHeader as CircuitHeader
 import pysnark.zkinterface.Message as Message
-import pysnark.zkinterface.R1CSConstraints as R1CSConstraints
+import pysnark.zkinterface.ConstraintSystem as ConstraintSystem
 import pysnark.zkinterface.Root as Root
 import pysnark.zkinterface.Variables as Variables
 import pysnark.zkinterface.Witness as Witness
@@ -103,18 +103,18 @@ def prove():
 
     vars = write_varlist(builder, pubvals, 1)
     
-    Circuit.CircuitStartFieldMaximumVector(builder, BL)
+    CircuitHeader.CircuitHeaderStartFieldMaximumVector(builder, BL)
     for i in reversed(range(BL)):
-        builder.PrependByte((modulus>>(i*8))&255)
+        builder.PrependByte(((modulus-1)>>(i*8))&255)
     maxi = builder.EndVector(BL)
     
-    Circuit.CircuitStart(builder)
-    Circuit.CircuitAddConnections(builder, vars)
-    Circuit.CircuitAddFreeVariableId(builder, len(pubvals)+len(privvals)+1)
-    Circuit.CircuitAddR1csGeneration(builder, True)
-    Circuit.CircuitAddWitnessGeneration(builder, True)
-    Circuit.CircuitAddFieldMaximum(builder, maxi)
-    circ = Circuit.CircuitEnd(builder)
+    CircuitHeader.CircuitHeaderStart(builder)
+    CircuitHeader.CircuitHeaderAddInstanceVariables(builder, vars)
+    CircuitHeader.CircuitHeaderAddFreeVariableId(builder, len(pubvals)+len(privvals)+1)
+    #CircuitHeader.CircuitHeaderAddR1csGeneration(builder, True)
+    #CircuitHeader.CircuitHeaderAddWitnessGeneration(builder, True)
+    CircuitHeader.CircuitHeaderAddFieldMaximum(builder, maxi)
+    circ = CircuitHeader.CircuitHeaderEnd(builder)
     
     Root.RootStart(builder)
     Root.RootAddMessageType(builder, Message.Message.CircuitHeader)
@@ -184,14 +184,14 @@ def prove():
         
     cs = [write_constraint(c) for c in constraints]
     
-    R1CSConstraints.R1CSConstraintsStartConstraintsVector(builder, len(cs))
+    ConstraintSystem.ConstraintSystemStartConstraintsVector(builder, len(cs))
     for i in reversed(range(len(cs))):
         builder.PrependUOffsetTRelative(cs[i])
     cvec = builder.EndVector(len(cs))
     
-    R1CSConstraints.R1CSConstraintsStart(builder)
-    R1CSConstraints.R1CSConstraintsAddConstraints(builder, cvec)
-    r1cs = R1CSConstraints.R1CSConstraintsEnd(builder)
+    ConstraintSystem.ConstraintSystemStart(builder)
+    ConstraintSystem.ConstraintSystemAddConstraints(builder, cvec)
+    r1cs = ConstraintSystem.ConstraintSystemEnd(builder)
     
     Root.RootStart(builder)
     Root.RootAddMessageType(builder, Message.Message.ConstraintSystem)
