@@ -121,25 +121,54 @@ $ snarkjs zkey export solidityverifier circuit.zkey verifier.sol
 $ snarkjs zkey export soliditycalldata public.json proof.json
 ```
 
-## Using PySNARK (zkinterface backend)
+## Using PySNARK (zkinterface backend: bellman, bulletproofs)
 
-PySNARK with the `zkinterface` backend automatically produces a file `computation.zkif` containing the circuit, witness, and constraint system for the computation.
+PySNARK with the `zkinterface` backend automatically produces a file `computation.zkif` containing the circuit, witness, and constraint system for the computation. This file can be used for example with the bellman and bulletproofs backends of `zkinterface`, see[here](https://github.com/QED-it/zkinterface/tree/master/ecosystem):
+
+To generate a zkif file that should work with the zkinterface libsnark backend (not tested):
 
 ```
-$ cd examples
-$ PYSNARK_BACKEND=zkinterface python3 cube.py 33
+examples meilof$ PYSNARK_BACKEND=zkinterface python3 cube.py 33
 The cube of 33 is 35937
 *** zkinterface: writing circuit
 *** zkinterface: writing witness
 *** zkinterface: writing constraints
 *** zkinterface circuit, witness, constraints written to 'computation.zkif', size 656
+``` 
+
+To generate a zkif file for the zkinterface bellman backend and use it:
+
+```
+examples meilof$ PYSNARK_BACKEND=zkifbellman python3 cube.py 33
+The cube of 33 is 35937
+*** zkinterface: writing circuit
+*** zkinterface: writing witness
+*** zkinterface: writing constraints
+*** zkinterface circuit, witness, constraints written to 'computation.zkif', size 656
+Meilofs-Air:examples meilof$ cat computation.zkif | zkif_bellman setup
+Written parameters into /Users/meilof/Subversion/pysnark/examples/bellman-pk
+Meilofs-Air:examples meilof$ cat computation.zkif | zkif_bellman prove
+Reading parameters from /Users/meilof/Subversion/pysnark/examples/bellman-pk
+Written proof into /Users/meilof/Subversion/pysnark/examples/bellman-proof
+Meilofs-Air:examples meilof$ cat computation.zkif | zkif_bellman verify
+Reading parameters from /Users/meilof/Subversion/pysnark/examples/bellman-pk
+Reading proof from /Users/meilof/Subversion/pysnark/examples/bellman-proof
+The proof is valid.
 ```
 
-The contents of the file can be printed with the `print` example program provided with zkinterface:
+To generate a zkif file for the zkinterface bulletproofs backend and use it:
 
 ```
-$ cargo run --bin print   < /path/to/computation.zkif 
-...
+examples meilof$ PYSNARK_BACKEND=zkifbulletproofs python3 cube.py 33
+The cube of 33 is 35937
+*** zkinterface: writing circuit
+*** zkinterface: writing witness
+*** zkinterface: writing constraints
+*** zkinterface circuit, witness, constraints written to 'computation.zkif', size 656
+Meilofs-Air:examples meilof$ cat computation.zkif | zkif_bulletproofs prove
+Saved proof into bulletproofs-proof
+Meilofs-Air:examples meilof$ cat computation.zkif | zkif_bulletproofs verify
+Verifying proof in bulletproofs-proof
 ```
 
 ## Using PySNARK (qaptools backend)
