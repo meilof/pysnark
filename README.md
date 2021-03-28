@@ -20,15 +20,18 @@ def cube(x):
 print("The cube of", sys.argv[1], "is", cube(int(sys.argv[1])))
 ```
 
-PySNARK can use [qaptools](https://github.com/Charterhouse/qaptools) or [libsnark](https://github.com/scipr-lab/libsnark) as backend. For any computations performed using the PubVal datatype provided by pysnark (or using the `@snark` decorator), the library keeps track of the Rank-1 constraint system of the computation. When the computation finishes,  key material for the computation is generated (or re-used) and a SNARK proof is generated.
+For any computations performed using the PubVal datatype provided by pysnark (or using the `@snark` decorator), the library keeps track of the Rank-1 constraint system of the computation. When the computation finishes,  key material for the computation is generated (or re-used) and a SNARK proof is generated.
 
 Features:
 
-* Pure Python 3.*; libsnark and qaptools backends supported on Windows/Linux/Mac OS
-* Can be used in combination with snarkjs as a drop-in replacement for circom
+* Pure Python 3.* (libsnark and qaptools backends supported on Windows/Linux/Mac OS)
+* Can be used in combination with:
+  * [libsnark](https://github.com/scipr-lab/libsnark) (natively or via zkinterface, Pinocchio-style or Groth16 proofs)
+  * snarkjs, as a drop-in replacement for circom
+  * bulletproofs, bellman (via [zkinterface](https://github.com/QED-it/zkinterface))
+  * [qaptools](https://github.com/Charterhouse/qaptools)
 * Automatically produce Solidity smart contracts
 * Automatically produce snarkjs circuit+witness or verification key+proof+public values
-* Automatically produce [zkinterface](https://github.com/QED-it/zkinterface) file for computation
 * Support for [integer arithmetic](https://github.com/meilof/pysnark/blob/master/pysnark/runtime.py#L179), [linear algebra](https://github.com/meilof/pysnark/blob/master/pysnark/linalg.py#L3), [arrays with conditional indexing](https://github.com/meilof/pysnark/blob/master/pysnark/array.py#L36), [if statements](https://github.com/meilof/pysnark/blob/master/pysnark/branching.py#L10) and [branching](https://github.com/meilof/pysnark/blob/master/pysnark/branching.py#L132), and [hashing](https://github.com/meilof/pysnark/blob/master/pysnark/hash.py#L61); see provided [examples](https://github.com/meilof/pysnark/tree/master/examples)
 
 PySNARK may be used for non-commercial, experimental and research purposes; see `LICENSE.md` for details. 
@@ -123,7 +126,7 @@ $ snarkjs zkey export soliditycalldata public.json proof.json
 
 ## Using PySNARK (zkinterface backend: bellman, bulletproofs)
 
-PySNARK with the `zkinterface` backend automatically produces a file `computation.zkif` containing the circuit, witness, and constraint system for the computation. This file can be used for example with the bellman and bulletproofs backends of `zkinterface`, see[here](https://github.com/QED-it/zkinterface/tree/master/ecosystem):
+PySNARK with the `zkinterface` backend automatically produces a file `computation.zkif` containing the circuit, witness, and constraint system for the computation. This file can be used for example with the bellman and bulletproofs backends of `zkinterface`, see [here](https://github.com/QED-it/zkinterface/tree/master/ecosystem):
 
 To generate a zkif file that should work with the zkinterface libsnark backend (not tested):
 
