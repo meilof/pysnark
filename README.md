@@ -2,6 +2,7 @@
 
 Recent news:
 
+*28.03.2021*: updated to latest zkinterface, now works with bellman and bulletproofs
 *03.11.2020*: updated to latest snarkjs
 
 *(This is a re-write of the original version of PySNARK, still available [here](https://github.com/Charterhouse/pysnark).)*
