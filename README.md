@@ -149,12 +149,12 @@ The cube of 33 is 35937
 *** zkinterface: writing witness
 *** zkinterface: writing constraints
 *** zkinterface circuit, witness, constraints written to 'computation.zkif', size 656
-Meilofs-Air:examples meilof$ cat computation.zkif | zkif_bellman setup
+examples meilof$ cat computation.zkif | zkif_bellman setup
 Written parameters into /Users/meilof/Subversion/pysnark/examples/bellman-pk
-Meilofs-Air:examples meilof$ cat computation.zkif | zkif_bellman prove
+examples meilof$ cat computation.zkif | zkif_bellman prove
 Reading parameters from /Users/meilof/Subversion/pysnark/examples/bellman-pk
 Written proof into /Users/meilof/Subversion/pysnark/examples/bellman-proof
-Meilofs-Air:examples meilof$ cat computation.zkif | zkif_bellman verify
+examples meilof$ cat computation.zkif | zkif_bellman verify
 Reading parameters from /Users/meilof/Subversion/pysnark/examples/bellman-pk
 Reading proof from /Users/meilof/Subversion/pysnark/examples/bellman-proof
 The proof is valid.
@@ -169,9 +169,9 @@ The cube of 33 is 35937
 *** zkinterface: writing witness
 *** zkinterface: writing constraints
 *** zkinterface circuit, witness, constraints written to 'computation.zkif', size 656
-Meilofs-Air:examples meilof$ cat computation.zkif | zkif_bulletproofs prove
+examples meilof$ cat computation.zkif | zkif_bulletproofs prove
 Saved proof into bulletproofs-proof
-Meilofs-Air:examples meilof$ cat computation.zkif | zkif_bulletproofs verify
+examples meilof$ cat computation.zkif | zkif_bulletproofs verify
 Verifying proof in bulletproofs-proof
 ```
 
