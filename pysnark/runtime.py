@@ -12,6 +12,8 @@ backends = [
     ["qaptools",    "pysnark.qaptools.backend"],
     ["snarkjs",     "pysnark.snarkjsbackend"],
     ["zkinterface", "pysnark.zkinterface.backend"],
+    ["zkifbellman", "pysnark.zkinterface.backendbellman"],
+    ["zkifbulletproofs", "pysnark.zkinterface.backendbulletproofs"],	
     ["nobackend",   "pysnark.nobackend"]
 ]
 
@@ -465,6 +467,10 @@ class LinComb:
             raise ValueError(err if err is not None else "value " + str(self.value) + " is not zero")
         
         add_constraint(self, wit, LinComb.ONE, check=False)
+        
+    def if_else(self, ifval, elseval):
+        from .branching import if_then_else
+        return if_then_else(self, ifval, elseval)
     
 LinComb.ZERO = LinComb(0, backend.zero())
 LinComb.ONE = LinComb(1, backend.one())
