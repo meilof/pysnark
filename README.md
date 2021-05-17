@@ -2,7 +2,10 @@
 
 Recent news:
 
+*17.05.2021*: want to use if branches, while and for loops in PySNARK programs? Check out [oblif](https://github.com/meilof/oblif)!
+
 *28.03.2021*: updated to latest zkinterface, now works with bellman and bulletproofs
+
 *03.11.2020*: updated to latest snarkjs
 
 *(This is a re-write of the original version of PySNARK, still available [here](https://github.com/Charterhouse/pysnark).)*
@@ -33,7 +36,9 @@ Features:
   * [qaptools](https://github.com/Charterhouse/qaptools)
 * Automatically produce Solidity smart contracts
 * Automatically produce snarkjs circuit+witness or verification key+proof+public values
-* Support for [integer arithmetic](https://github.com/meilof/pysnark/blob/master/pysnark/runtime.py#L179), [linear algebra](https://github.com/meilof/pysnark/blob/master/pysnark/linalg.py#L3), [arrays with conditional indexing](https://github.com/meilof/pysnark/blob/master/pysnark/array.py#L36), [if statements](https://github.com/meilof/pysnark/blob/master/pysnark/branching.py#L10) and [branching](https://github.com/meilof/pysnark/blob/master/pysnark/branching.py#L132), and [hashing](https://github.com/meilof/pysnark/blob/master/pysnark/hash.py#L61); see provided [examples](https://github.com/meilof/pysnark/tree/master/examples)
+* Support for [integer arithmetic](https://github.com/meilof/pysnark/blob/master/pysnark/runtime.py#L179), [linear algebra](https://github.com/meilof/pysnark/blob/master/pysnark/linalg.py#L3), [arrays with conditional indexing](https://github.com/meilof/pysnark/blob/master/pysnark/array.py#L36), and [hashing](https://github.com/meilof/pysnark/blob/master/pysnark/hash.py#L61)
+* For branching, use [oblif](https://github.com/meilof/oblif) or the built-in functions to emulate [if statements](https://github.com/meilof/pysnark/blob/master/pysnark/branching.py#L10) and [if/while/for conditionals](https://github.com/meilof/pysnark/blob/master/pysnark/branching.py#L132)
+* See provided [examples](https://github.com/meilof/pysnark/tree/master/examples)
 
 PySNARK may be used for non-commercial, experimental and research purposes; see `LICENSE.md` for details. 
 PySNARK is experimental and **not fit for production environment**.
