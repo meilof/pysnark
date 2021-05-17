@@ -36,3 +36,6 @@ examples/verifier.sol
 examples/witness.wtns
 examples/testx.py
 examples/cubeint.py
+pysnark_ek
+pysnark_log
+pysnark_vk

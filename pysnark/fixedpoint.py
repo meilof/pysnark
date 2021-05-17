@@ -29,71 +29,72 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import pysnark.runtime
-from pysnark.runtime import LinComb, is_base_value
+from pysnark.runtime import LinComb, is_base_value, PrivVal, PubVal
 
 """
 Support for fixed-point computations
 """
 
-class LinCombFxp(LinComb):
+class LinCombFxp:
     """
     Variable representing a fixed-point number. Number x is represented as integer
     :math:`x * 2^r`, where r is the resolution :py:data:`VarFxp.res`
     """
+    
+    res = 8
 
-    res = 8     #: Resulution for fixed-point numbers
+    def __init__(self, lc):
+        if not isinstance(lc, LinComb): raise RuntimeError("wrong type for LinCombFxp")
+        self.lc = lc
 
     @classmethod
     def fromvar(cls, var, doconvert):
+        if not isinstance(var, LinComb): raise RuntimeError("wrong type for fromvar")
         if doconvert:
-            return cls(var.value*(1<<cls.res), var.lc*(1<<cls.res))
+            return cls(var*(1<<LinCombFxp.res))
         else:
-            return cls(var.value, var.lc)
+            return cls(var)
     
     @classmethod
     def tofloat(self, val):
         return float(val)/(1<<LinCombFxp.res)
     
     def val(self):
-        (self-PubValFxp(self.value, False)).assert_zero()
-        return LinCombFxp.tofloat(self.value)
+        return LinCombFxp.tofloat(self.lc.val())
 
     def __repr__(self):
-        return "{"+str(LinCombFxp.tofloat(self.value))+"}"
+        return "{"+str(LinCombFxp.tofloat(self.lc.value))+"}"
     
     @classmethod
     def _ensurefxp(cls, val):
         if isinstance(val,LinCombFxp):
             return val
         elif isinstance(val,LinComb):
-            return LinCombFxp.fromvar(val, True)
+            return cls.fromvar(val, True)
         else:
             v = _tofxpval(val, True)
-            return LinCombFxp(v, LinComb.ONE.lc*v)
+            return cls(LinComb.ONE*v)
     
     def __add__(self, other):
         other = self._ensurefxp(other)
-        
-        if isinstance(other, LinCombFxp):
-            return LinCombFxp(self.value+other.value, self.lc+other.lc)
-        elif is_base_value(other):
-            return self + other*LinComb.ONE
-        else:
-            return NotImplemented
+        return LinCombFxp(self.lc+other.lc)
         
     __radd__ = __add__
+    
+    def __sub__(self, other):
+        return self+(-other)
 
     def __mul__(self, other):
         if is_base_value(other):
-            return LinCombFxp(self.value*other, self.lc*other)
+            return LinCombFxp(self.lc*other)
         
         other = self._ensurefxp(other)
         if other is NotImplemented: return NotImplemented
         
-        ret = PrivValFxp((self.value*other.value+(1<<(LinCombFxp.res-1)))>>LinCombFxp.res, False)
+        ret = LinCombFxp(PrivVal((self.lc.value*other.lc.value+(1<<(LinCombFxp.res-1)))>>LinCombFxp.res))
             
         # mul error: should be in [-2^f,2^f]
-        diff = LinComb.__add__((1<<LinCombFxp.res)*ret, -LinComb.__mul__(self, other))
+        diff = (1<<LinCombFxp.res)*ret.lc-self.lc*other.lc
         (diff + (1<<LinCombFxp.res)).assert_positive(LinCombFxp.res+1)
         ((1<<LinCombFxp.res) - diff).assert_positive(LinCombFxp.res+1)
 
@@ -105,12 +106,12 @@ class LinCombFxp(LinComb):
         other = self._ensurefxp(other)
         if other is NotImplemented: return NotImplemented
 
-        ret = PrivValFxp(int(float(self.value)*(1<<LinCombFxp.res)/float(other.value)+0.5),False)
+        ret = LinCombFxp(PrivVal(int(float(self.lc.value)*(1<<LinCombFxp.res)/float(other.lc.value)+0.5)))
 
         # division error: should be in [-other,other]
-        df=LinComb.__mul__(self, 1<<LinCombFxp.res)-LinComb.__mul__(ret,other)    
-        LinComb.__add__(other, -df).assert_positive()
-        LinComb.__add__(other, df).assert_positive()
+        df=self.lc*(1<<LinCombFxp.res)-ret.lc*other.lc
+        (other.lc-df).assert_positive()
+        (other.lc+df).assert_positive()
         
         return ret
          
@@ -127,7 +128,14 @@ class LinCombFxp(LinComb):
         return NotImplemented
 
     def __neg__(self):
-        return LinCombFxp(-self.value, -self.lc)
+        return LinCombFxp(-self.lc)
+    
+    def __lt__(self, other): return self.lc < self._ensurefxp(other).lc
+    def __le__(self, other): return self.lc <= self._ensurefxp(other).lc
+    def __eq__(self, other): return self.lc == self._ensurefxp(other).lc
+    def __ne__(self, other): return self.lc != self._ensurefxp(other).lc
+    def __gt__(self, other): return self.lc > self._ensurefxp(other).lc
+    def __ge__(self, other): return self.lc >= self._ensurefxp(other).lc
         
 def _tofxpval(val, doconvert):
     if isinstance(val, float):
@@ -139,9 +147,9 @@ def _tofxpval(val, doconvert):
         
 def PubValFxp(val, doconvert=True):
     val = _tofxpval(val, doconvert)
-    return LinCombFxp(val, pysnark.runtime.backend.pubval(val))
+    return LinCombFxp(PubVal(val))
 
 def PrivValFxp(val, doconvert=True):
     val = _tofxpval(val, doconvert)
-    return LinCombFxp(val, pysnark.runtime.backend.privval(val))
+    return LinCombFxp(PrivVal(val))
 
