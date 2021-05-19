@@ -672,6 +672,7 @@ def snark(fn):
         if kwargs: raise ValueError("@snark-decorated functions cannot have keyword arguments")
 
         argscopy = for_each_in(lambda x: PubVal(x) if isinstance(x,int) else x, args)
+        argscopy = for_each_in(lambda x: PubValFxp(x) if isinstance(x,float) else x, argscopy)
         ret = fn(*argscopy, **kwargs)
         retcopy = for_each_in(lambda x: x.val() if isinstance(x,LinComb) else x, ret)
 
