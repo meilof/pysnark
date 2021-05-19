@@ -489,6 +489,8 @@ def for_each_in(converter, struct):
         return list(map(lambda x: for_each_in(converter, x), struct))
     elif isinstance(struct, tuple):
         return tuple(map(lambda x: for_each_in(converter, x), struct))
+    elif isinstance(struct, dict):
+        return {k: for_each_in(converter, struct[k]) for k in struct}
     else:
         return converter(struct)
 
