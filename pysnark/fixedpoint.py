@@ -83,6 +83,9 @@ class LinCombFxp:
     
     def __sub__(self, other):
         return self+(-other)
+    
+    def __rsub__(self, other):
+        return other+(-self)    
 
     def __mul__(self, other):
         if is_base_value(other):
@@ -136,6 +139,46 @@ class LinCombFxp:
     def __ne__(self, other): return self.lc != self._ensurefxp(other).lc
     def __gt__(self, other): return self.lc > self._ensurefxp(other).lc
     def __ge__(self, other): return self.lc >= self._ensurefxp(other).lc
+    
+    def assert_lt(self, other, err=None): self.lc.assert_lt(self._ensurefxp(other).lc)
+    def assert_le(self, other, err=None): self.lc.assert_le(self._ensurefxp(other).lc)
+    def assert_eq(self, other, err=None): self.lc.assert_eq(self._ensurefxp(other).lc)
+    def assert_ne(self, other, err=None): self.lc.assert_ne(self._ensurefxp(other).lc)
+    def assert_gt(self, other, err=None): self.lc.assert_gt(self._ensurefxp(other).lc)
+    def assert_ge(self, other, err=None): self.lc.assert_ge(self._ensurefxp(other).lc)
+        
+    def __bool__(self): return bool(self.lc)
+        
+    def __pow__(self, other, mod=None):
+        """ Exponentiation with public integral power p>=0 """
+        if mod!=None: raise ValueError("cannot provide modulus")
+        if not is_base_value(other): return NotImplemented
+        if other<0: raise ValueError("exponent cannot be negative", other)
+        if other==0: return LinCombFxp.fromvar(LinComb.ONE, True)
+        if other==1: return self
+        return self*pow(self, other-1)
+    
+    def __lshift__(self, other): return LinCombFxp(self.lc<<other)
+    def __rshift__(self, other): return LinCombFxp(self.lc>>other)
+        
+    def __pos__(self):
+        return self
+    
+    def __abs__(self):
+        from .branching import if_then_else
+        return if_then_else(self>=0, self, -self)
+
+    def __int__(self): raise NotImplementedError("Should not run int() on LinComb")
+        
+    def check_positive(self): return self.lc.check_positive()
+    def assert_positive(self): self.lc.assert_positive()
+    def check_zero(self): return self.lc.check_zero()
+    def assert_zero(self): self.lc.assert_zero()
+    def assert_nonzero(self): self.lc.assert_nonzero()
+        
+    def __if_then_else__(self, other, cond):
+        falsev = self._ensurefxp(other).lc
+        return LinCombFxp(falsev+(self.lc-falsev)*cond)
         
 def _tofxpval(val, doconvert):
     if isinstance(val, float):
