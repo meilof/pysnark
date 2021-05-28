@@ -252,9 +252,13 @@ class LinComb:
         return self.__divmod__(other)[0]
 
     def __mod__(self, other):
-        if other&(other-1)==0:
-            # this is faster for powers of two
-            return LinComb.from_bits(self.to_bits()[:other.bit_length()-1])
+        if is_base_value(other):
+            other = other * LinComb.ONE
+
+        # Handle powers of two
+        # Do check using value to prevent calling __bool__. No need to output as constraint
+        if other.value & (other.value - 1)==0:
+            return LinComb.from_bits(self.to_bits()[:other.value.bit_length()-1])
         
         return self.__divmod__(other)[1]
         
