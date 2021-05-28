@@ -633,11 +633,11 @@ class LinCombFxp:
 
     def __int__(self): raise NotImplementedError("Should not run int() on LinComb")
         
-    def check_positive(self): return self.lc.check_positive()
-    def assert_positive(self): self.lc.assert_positive()
+    def check_positive(self, *args, **kwargs): return self.lc.check_positive(*args, **kwargs)
+    def assert_positive(self, *args, **kwargs): self.lc.assert_positive(*args, **kwargs)
     def check_zero(self): return self.lc.check_zero()
-    def assert_zero(self): self.lc.assert_zero()
-    def assert_nonzero(self): self.lc.assert_nonzero()
+    def assert_zero(self, *args, **kwargs): self.lc.assert_zero(*args, **kwargs)
+    def assert_nonzero(self, *args, **kwargs): self.lc.assert_nonzero(*args, **kwargs)
         
     def __if_then_else__(self, other, cond):
         falsev = self._ensurefxp(other).lc
