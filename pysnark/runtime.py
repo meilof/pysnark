@@ -287,13 +287,13 @@ class LinComb:
     def __lshift__(self, other):
         """ Left-shift with public value """
         # TODO: extend to secret offset?
-        if not is_base_ovalue(other): return NotImplemented
+        if not is_base_value(other): return NotImplemented
         return self*(1<<other)
     
     def __rshift__(self, other):
         """ Right-shift with public value """
         # TODO: extend to secret offset?
-        if not is_base_ovalue(other): return NotImplemented
+        if not is_base_value(other): return NotImplemented
         return LinComb.from_bits(self.to_bits[other:])
     
     def _check_both_bits(self, other):
