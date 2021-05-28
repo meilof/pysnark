@@ -249,7 +249,9 @@ class LinComb:
          
     def __floordiv__(self, other):
         """ Division with rounding """
-        return self.__divmod__(other)[0]
+        res = self.__divmod__(other)
+        if res is NotImplemented: return NotImplemented
+        return res[0]
 
     def __mod__(self, other):
         if is_base_value(other):
@@ -260,7 +262,9 @@ class LinComb:
         if other.value & (other.value - 1)==0:
             return LinComb.from_bits(self.to_bits()[:other.value.bit_length()-1])
         
-        return self.__divmod__(other)[1]
+        res = self.__divmod__(other)
+        if res is NotImplemented: return NotImplemented
+        return res[1]
         
     def __divmod__(self, divisor):
         """ Division by public value """
