@@ -32,8 +32,7 @@ from scipy.stats import chi2
 
 import pysnark.runtime
 
-from pysnark.runtime import PrivVal
-from pysnark.fixedpoint import LinCombFxp
+from pysnark.runtime import PrivVal, LinCombFxp
 
 if __name__ == '__main__':
     # example batch of survival data from two populations
