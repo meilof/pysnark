@@ -59,7 +59,7 @@ def rand_bits(count):
     return [random.randint(0, 1) for i in xrange(count)]
 
 def ggh_hash(bits):
-    if isinstance(bits[0], LinComb):
+    if any(map(lambda x: isinstance(x, LinComb), bits)):
         return ggh_hash_nonplain(bits)
     else:
         return ggh_hash_plain(bits)
