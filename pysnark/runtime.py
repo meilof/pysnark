@@ -258,7 +258,12 @@ class LinComb:
             other = other * LinComb.ONE
 
         # Handle powers of two
-        # Do check using value to prevent calling __bool__. No need to output as constraint
+        # Do check using value to prevent calling __bool__
+        # If statement logic isn't outputted in constraint. May need rework
+        if other.value == 0:
+            return ZeroDivisionError
+        if other.value == 1:
+            return LinComb.ZERO
         if other.value & (other.value - 1)==0:
             return LinComb.from_bits(self.to_bits()[:other.value.bit_length()-1])
         
@@ -412,6 +417,9 @@ class LinComb:
         
     @classmethod
     def from_bits(cls, bits):
+        if bits == []:
+            return LinComb.ZERO
+
         return sum([biti*(1<<i) for (i,biti) in enumerate(bits)])
         
     """
