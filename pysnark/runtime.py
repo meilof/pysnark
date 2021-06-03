@@ -677,6 +677,7 @@ def snark(fn):
         argscopy = for_each_in(lambda x: PubValFxp(x) if isinstance(x,float) else x, argscopy)
         ret = fn(*argscopy, **kwargs)
         retcopy = for_each_in(lambda x: x.val() if isinstance(x,LinComb) else x, ret)
+        retcopy = for_each_in(lambda x: x.val() if isinstance(x,LinCombFxp) else x, retcopy)
 
         return retcopy
         
