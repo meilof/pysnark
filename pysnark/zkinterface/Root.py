@@ -10,12 +10,16 @@ class Root(object):
     __slots__ = ['_tab']
 
     @classmethod
-    def GetRootAsRoot(cls, buf, offset):
+    def GetRootAs(cls, buf, offset=0):
         n = flatbuffers.encode.Get(flatbuffers.packer.uoffset, buf, offset)
         x = Root()
         x.Init(buf, n + offset)
         return x
 
+    @classmethod
+    def GetRootAsRoot(cls, buf, offset=0):
+        """This method is deprecated. Please switch to GetRootAs."""
+        return cls.GetRootAs(buf, offset)
     @classmethod
     def RootBufferHasIdentifier(cls, buf, offset, size_prefixed=False):
         return flatbuffers.util.BufferHasIdentifier(buf, offset, b"\x7A\x6B\x69\x66", size_prefixed=size_prefixed)
@@ -41,7 +45,19 @@ class Root(object):
             return obj
         return None
 
-def RootStart(builder): builder.StartObject(2)
-def RootAddMessageType(builder, messageType): builder.PrependUint8Slot(0, messageType, 0)
-def RootAddMessage(builder, message): builder.PrependUOffsetTRelativeSlot(1, flatbuffers.number_types.UOffsetTFlags.py_type(message), 0)
-def RootEnd(builder): return builder.EndObject()
+def Start(builder): builder.StartObject(2)
+def RootStart(builder):
+    """This method is deprecated. Please switch to Start."""
+    return Start(builder)
+def AddMessageType(builder, messageType): builder.PrependUint8Slot(0, messageType, 0)
+def RootAddMessageType(builder, messageType):
+    """This method is deprecated. Please switch to AddMessageType."""
+    return AddMessageType(builder, messageType)
+def AddMessage(builder, message): builder.PrependUOffsetTRelativeSlot(1, flatbuffers.number_types.UOffsetTFlags.py_type(message), 0)
+def RootAddMessage(builder, message):
+    """This method is deprecated. Please switch to AddMessage."""
+    return AddMessage(builder, message)
+def End(builder): return builder.EndObject()
+def RootEnd(builder):
+    """This method is deprecated. Please switch to End."""
+    return End(builder)

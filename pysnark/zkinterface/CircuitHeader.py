@@ -13,12 +13,16 @@ class CircuitHeader(object):
     __slots__ = ['_tab']
 
     @classmethod
-    def GetRootAsCircuitHeader(cls, buf, offset):
+    def GetRootAs(cls, buf, offset=0):
         n = flatbuffers.encode.Get(flatbuffers.packer.uoffset, buf, offset)
         x = CircuitHeader()
         x.Init(buf, n + offset)
         return x
 
+    @classmethod
+    def GetRootAsCircuitHeader(cls, buf, offset=0):
+        """This method is deprecated. Please switch to GetRootAs."""
+        return cls.GetRootAs(buf, offset)
     @classmethod
     def CircuitHeaderBufferHasIdentifier(cls, buf, offset, size_prefixed=False):
         return flatbuffers.util.BufferHasIdentifier(buf, offset, b"\x7A\x6B\x69\x66", size_prefixed=size_prefixed)
@@ -117,11 +121,35 @@ class CircuitHeader(object):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(10))
         return o == 0
 
-def CircuitHeaderStart(builder): builder.StartObject(4)
-def CircuitHeaderAddInstanceVariables(builder, instanceVariables): builder.PrependUOffsetTRelativeSlot(0, flatbuffers.number_types.UOffsetTFlags.py_type(instanceVariables), 0)
-def CircuitHeaderAddFreeVariableId(builder, freeVariableId): builder.PrependUint64Slot(1, freeVariableId, 0)
-def CircuitHeaderAddFieldMaximum(builder, fieldMaximum): builder.PrependUOffsetTRelativeSlot(2, flatbuffers.number_types.UOffsetTFlags.py_type(fieldMaximum), 0)
-def CircuitHeaderStartFieldMaximumVector(builder, numElems): return builder.StartVector(1, numElems, 1)
-def CircuitHeaderAddConfiguration(builder, configuration): builder.PrependUOffsetTRelativeSlot(3, flatbuffers.number_types.UOffsetTFlags.py_type(configuration), 0)
-def CircuitHeaderStartConfigurationVector(builder, numElems): return builder.StartVector(4, numElems, 4)
-def CircuitHeaderEnd(builder): return builder.EndObject()
+def Start(builder): builder.StartObject(4)
+def CircuitHeaderStart(builder):
+    """This method is deprecated. Please switch to Start."""
+    return Start(builder)
+def AddInstanceVariables(builder, instanceVariables): builder.PrependUOffsetTRelativeSlot(0, flatbuffers.number_types.UOffsetTFlags.py_type(instanceVariables), 0)
+def CircuitHeaderAddInstanceVariables(builder, instanceVariables):
+    """This method is deprecated. Please switch to AddInstanceVariables."""
+    return AddInstanceVariables(builder, instanceVariables)
+def AddFreeVariableId(builder, freeVariableId): builder.PrependUint64Slot(1, freeVariableId, 0)
+def CircuitHeaderAddFreeVariableId(builder, freeVariableId):
+    """This method is deprecated. Please switch to AddFreeVariableId."""
+    return AddFreeVariableId(builder, freeVariableId)
+def AddFieldMaximum(builder, fieldMaximum): builder.PrependUOffsetTRelativeSlot(2, flatbuffers.number_types.UOffsetTFlags.py_type(fieldMaximum), 0)
+def CircuitHeaderAddFieldMaximum(builder, fieldMaximum):
+    """This method is deprecated. Please switch to AddFieldMaximum."""
+    return AddFieldMaximum(builder, fieldMaximum)
+def StartFieldMaximumVector(builder, numElems): return builder.StartVector(1, numElems, 1)
+def CircuitHeaderStartFieldMaximumVector(builder, numElems):
+    """This method is deprecated. Please switch to Start."""
+    return StartFieldMaximumVector(builder, numElems)
+def AddConfiguration(builder, configuration): builder.PrependUOffsetTRelativeSlot(3, flatbuffers.number_types.UOffsetTFlags.py_type(configuration), 0)
+def CircuitHeaderAddConfiguration(builder, configuration):
+    """This method is deprecated. Please switch to AddConfiguration."""
+    return AddConfiguration(builder, configuration)
+def StartConfigurationVector(builder, numElems): return builder.StartVector(4, numElems, 4)
+def CircuitHeaderStartConfigurationVector(builder, numElems):
+    """This method is deprecated. Please switch to Start."""
+    return StartConfigurationVector(builder, numElems)
+def End(builder): return builder.EndObject()
+def CircuitHeaderEnd(builder):
+    """This method is deprecated. Please switch to End."""
+    return End(builder)

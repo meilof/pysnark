@@ -75,14 +75,14 @@ def write_varlist(builder, vals, offset):
     Variables.VariablesStartVariableIdsVector(builder, len(vals))
     for i in reversed(range(len(vals))):
         builder.PrependUint64(i+offset)
-    ixs = builder.EndVector(len(vals))
+    ixs = builder.EndVector()
     
     Variables.VariablesStartValuesVector(builder, BL*len(vals))
     for i in reversed(range(len(vals))):
         val=vals[i]%modulus
         for j in reversed(range(BL)):
             builder.PrependByte((val>>(j*8))&255)
-    vals = builder.EndVector(BL*len(vals))
+    vals = builder.EndVector()
         
     Variables.VariablesStart(builder)
     Variables.VariablesAddVariableIds(builder, ixs)
@@ -106,7 +106,7 @@ def prove():
     CircuitHeader.CircuitHeaderStartFieldMaximumVector(builder, BL)
     for i in reversed(range(BL)):
         builder.PrependByte(((modulus-1)>>(i*8))&255)
-    maxi = builder.EndVector(BL)
+    maxi = builder.EndVector()
     
     CircuitHeader.CircuitHeaderStart(builder)
     CircuitHeader.CircuitHeaderAddInstanceVariables(builder, vars)
@@ -156,14 +156,14 @@ def prove():
         for i in reversed(range(len(varls))):
             varix = varls[i] if varls[i]>=0 else len(pubvals)-varls[i]
             builder.PrependUint64(varix)
-        vars = builder.EndVector(len(varls))
+        vars = builder.EndVector()
         
         Variables.VariablesStartValuesVector(builder, BL*len(varls))
         for i in reversed(range(len(varls))):
             for j in reversed(range(BL)):
                 val=lc.lc[varls[i]]%modulus
                 builder.PrependByte((val>>(j*8))&255)
-        vals = builder.EndVector(BL*len(varls))
+        vals = builder.EndVector()
         
         Variables.VariablesStart(builder)
         Variables.VariablesAddVariableIds(builder, vars)
@@ -187,7 +187,7 @@ def prove():
     ConstraintSystem.ConstraintSystemStartConstraintsVector(builder, len(cs))
     for i in reversed(range(len(cs))):
         builder.PrependUOffsetTRelative(cs[i])
-    cvec = builder.EndVector(len(cs))
+    cvec = builder.EndVector()
     
     ConstraintSystem.ConstraintSystemStart(builder)
     ConstraintSystem.ConstraintSystemAddConstraints(builder, cvec)

@@ -14,12 +14,16 @@ class Command(object):
     __slots__ = ['_tab']
 
     @classmethod
-    def GetRootAsCommand(cls, buf, offset):
+    def GetRootAs(cls, buf, offset=0):
         n = flatbuffers.encode.Get(flatbuffers.packer.uoffset, buf, offset)
         x = Command()
         x.Init(buf, n + offset)
         return x
 
+    @classmethod
+    def GetRootAsCommand(cls, buf, offset=0):
+        """This method is deprecated. Please switch to GetRootAs."""
+        return cls.GetRootAs(buf, offset)
     @classmethod
     def CommandBufferHasIdentifier(cls, buf, offset, size_prefixed=False):
         return flatbuffers.util.BufferHasIdentifier(buf, offset, b"\x7A\x6B\x69\x66", size_prefixed=size_prefixed)
@@ -79,9 +83,27 @@ class Command(object):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(8))
         return o == 0
 
-def CommandStart(builder): builder.StartObject(3)
-def CommandAddConstraintsGeneration(builder, constraintsGeneration): builder.PrependBoolSlot(0, constraintsGeneration, 0)
-def CommandAddWitnessGeneration(builder, witnessGeneration): builder.PrependBoolSlot(1, witnessGeneration, 0)
-def CommandAddParameters(builder, parameters): builder.PrependUOffsetTRelativeSlot(2, flatbuffers.number_types.UOffsetTFlags.py_type(parameters), 0)
-def CommandStartParametersVector(builder, numElems): return builder.StartVector(4, numElems, 4)
-def CommandEnd(builder): return builder.EndObject()
+def Start(builder): builder.StartObject(3)
+def CommandStart(builder):
+    """This method is deprecated. Please switch to Start."""
+    return Start(builder)
+def AddConstraintsGeneration(builder, constraintsGeneration): builder.PrependBoolSlot(0, constraintsGeneration, 0)
+def CommandAddConstraintsGeneration(builder, constraintsGeneration):
+    """This method is deprecated. Please switch to AddConstraintsGeneration."""
+    return AddConstraintsGeneration(builder, constraintsGeneration)
+def AddWitnessGeneration(builder, witnessGeneration): builder.PrependBoolSlot(1, witnessGeneration, 0)
+def CommandAddWitnessGeneration(builder, witnessGeneration):
+    """This method is deprecated. Please switch to AddWitnessGeneration."""
+    return AddWitnessGeneration(builder, witnessGeneration)
+def AddParameters(builder, parameters): builder.PrependUOffsetTRelativeSlot(2, flatbuffers.number_types.UOffsetTFlags.py_type(parameters), 0)
+def CommandAddParameters(builder, parameters):
+    """This method is deprecated. Please switch to AddParameters."""
+    return AddParameters(builder, parameters)
+def StartParametersVector(builder, numElems): return builder.StartVector(4, numElems, 4)
+def CommandStartParametersVector(builder, numElems):
+    """This method is deprecated. Please switch to Start."""
+    return StartParametersVector(builder, numElems)
+def End(builder): return builder.EndObject()
+def CommandEnd(builder):
+    """This method is deprecated. Please switch to End."""
+    return End(builder)

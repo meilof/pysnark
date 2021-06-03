@@ -13,12 +13,16 @@ class ConstraintSystem(object):
     __slots__ = ['_tab']
 
     @classmethod
-    def GetRootAsConstraintSystem(cls, buf, offset):
+    def GetRootAs(cls, buf, offset=0):
         n = flatbuffers.encode.Get(flatbuffers.packer.uoffset, buf, offset)
         x = ConstraintSystem()
         x.Init(buf, n + offset)
         return x
 
+    @classmethod
+    def GetRootAsConstraintSystem(cls, buf, offset=0):
+        """This method is deprecated. Please switch to GetRootAs."""
+        return cls.GetRootAs(buf, offset)
     @classmethod
     def ConstraintSystemBufferHasIdentifier(cls, buf, offset, size_prefixed=False):
         return flatbuffers.util.BufferHasIdentifier(buf, offset, b"\x7A\x6B\x69\x66", size_prefixed=size_prefixed)
@@ -81,9 +85,27 @@ class ConstraintSystem(object):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(6))
         return o == 0
 
-def ConstraintSystemStart(builder): builder.StartObject(2)
-def ConstraintSystemAddConstraints(builder, constraints): builder.PrependUOffsetTRelativeSlot(0, flatbuffers.number_types.UOffsetTFlags.py_type(constraints), 0)
-def ConstraintSystemStartConstraintsVector(builder, numElems): return builder.StartVector(4, numElems, 4)
-def ConstraintSystemAddInfo(builder, info): builder.PrependUOffsetTRelativeSlot(1, flatbuffers.number_types.UOffsetTFlags.py_type(info), 0)
-def ConstraintSystemStartInfoVector(builder, numElems): return builder.StartVector(4, numElems, 4)
-def ConstraintSystemEnd(builder): return builder.EndObject()
+def Start(builder): builder.StartObject(2)
+def ConstraintSystemStart(builder):
+    """This method is deprecated. Please switch to Start."""
+    return Start(builder)
+def AddConstraints(builder, constraints): builder.PrependUOffsetTRelativeSlot(0, flatbuffers.number_types.UOffsetTFlags.py_type(constraints), 0)
+def ConstraintSystemAddConstraints(builder, constraints):
+    """This method is deprecated. Please switch to AddConstraints."""
+    return AddConstraints(builder, constraints)
+def StartConstraintsVector(builder, numElems): return builder.StartVector(4, numElems, 4)
+def ConstraintSystemStartConstraintsVector(builder, numElems):
+    """This method is deprecated. Please switch to Start."""
+    return StartConstraintsVector(builder, numElems)
+def AddInfo(builder, info): builder.PrependUOffsetTRelativeSlot(1, flatbuffers.number_types.UOffsetTFlags.py_type(info), 0)
+def ConstraintSystemAddInfo(builder, info):
+    """This method is deprecated. Please switch to AddInfo."""
+    return AddInfo(builder, info)
+def StartInfoVector(builder, numElems): return builder.StartVector(4, numElems, 4)
+def ConstraintSystemStartInfoVector(builder, numElems):
+    """This method is deprecated. Please switch to Start."""
+    return StartInfoVector(builder, numElems)
+def End(builder): return builder.EndObject()
+def ConstraintSystemEnd(builder):
+    """This method is deprecated. Please switch to End."""
+    return End(builder)
