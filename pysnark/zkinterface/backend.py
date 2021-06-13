@@ -90,13 +90,24 @@ def write_varlist(builder, vals, offset):
     return Variables.VariablesEnd(builder)   
     
     
-    
 def prove():
     # TODO: this is pretty slow, maybe use this to improve performance:
     # https://github.com/google/flatbuffers/issues/4668
     
     f = open('computation.zkif', 'wb')
+    write_circuit(f)
+    write_witness(f)
+    write_constraints(f)
+    f.close()     	
+    print("*** zkinterface circuit, witness, constraints written to 'computation.zkif'")
     
+    f = open('circuit.zkif', 'wb')
+    write_circuit(f)
+    write_constraints(f)
+    f.close()     	
+    print("*** zkinterface circuit, constraints written to 'circuit.zkif'")
+
+def write_circuit(f):    
     print("*** zkinterface: writing circuit", file=sys.stderr)
     
     builder = flatbuffers.Builder(1024)
@@ -125,6 +136,7 @@ def prove():
     buf = builder.Output()
     f.write(buf)
     
+def write_witness(f):    
     print("*** zkinterface: writing witness", file=sys.stderr)
     
     # build witness
@@ -145,6 +157,7 @@ def prove():
     buf = builder.Output()
     f.write(buf)    
     
+def write_constraints(f):    
     print("*** zkinterface: writing constraints", file=sys.stderr)
     
     builder = flatbuffers.Builder(1024)
@@ -202,6 +215,3 @@ def prove():
     buf = builder.Output()
     f.write(buf)
 
-    f.close() 
-    
-    print("*** zkinterface circuit, witness, constraints written to 'computation.zkif', size", len(buf))
