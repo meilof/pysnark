@@ -5,6 +5,7 @@ import os
 import sys
 
 backend = None
+backend_name = None
 
 backends = [
     ["libsnark",    "pysnark.libsnark.backend"],
@@ -19,13 +20,15 @@ backends = [
 
 for mod in backends:
     if mod[1] in sys.modules:
+        backend_name = mod[0]
         backend = sys.modules[mod[1]]
         break
 
 if backend is None and "PYSNARK_BACKEND" in os.environ:
     for mod in backends:
         if os.environ["PYSNARK_BACKEND"]==mod[0]:
-            backend=importlib.import_module(mod[1])
+            backend_name = mod[0]
+            backend = importlib.import_module(mod[1])
     if backend is None:
         print("*** PySNARK: unknown backend in environment variables: " + os.environ["PYSNARK_BACKEND"])
 
@@ -33,10 +36,12 @@ if backend is None:
     try:
         get_ipython()
         import pysnark.nobackend
-        backen = pysnark.nobackend
+        backend_name = "nobackend"
+        backend = pysnark.nobackend
     except:
         for mod in backends:
             try:
+                backend_name = mod[0]
                 backend = importlib.import_module(mod[1])
                 break
             except Exception as e:
