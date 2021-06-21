@@ -23,21 +23,21 @@ for mod in backends:
         break
 
 if backend is None and "PYSNARK_BACKEND" in os.environ:
-        for mod in backends:
-            if os.environ["PYSNARK_BACKEND"]==mod[0]:
-                backend=importlib.import_module(mod[1])
-        if backend is None:
-            print("*** PySNARK: unknown backend in environment variables: " + os.environ["PYSNARK_BACKEND"])
+    for mod in backends:
+        if os.environ["PYSNARK_BACKEND"]==mod[0]:
+            backend=importlib.import_module(mod[1])
+    if backend is None:
+        print("*** PySNARK: unknown backend in environment variables: " + os.environ["PYSNARK_BACKEND"])
 
 if backend is None:
     try:
         get_ipython()
         import pysnark.nobackend
-        backend=pysnark.nobackend
+        backen = pysnark.nobackend
     except:
         for mod in backends:
             try:
-                backend=importlib.import_module(mod[1])
+                backend = importlib.import_module(mod[1])
                 break
             except Exception as e:
                 print("*** Error loading backend " + str(mod[1]) + ":", e)
@@ -182,26 +182,80 @@ class LinComb:
         return self
     
     # self<other, so other-self>0, so other-self-1>=0
-    def __lt__(self, other): return (other-self-1).check_positive()
-    def assert_lt(self, other, err=None): (other-self-1).assert_positive(err)
+    def __lt__(self, other):
+        return (other-self-1).check_positive()
+    
+    def assert_lt(self, other, err=None):
+        other = LinComb._ensurelc(other)
+
+        if not ignore_errors():
+            if self.value >= other.value:
+                raise AssertionError(err if err is not None else str(self.value) + " is not less than " + str(other.value))
+
+        (other-self-1).assert_positive(err=err)
         
     # self<=other, so other-self>=0
-    def __le__(self, other): return (other-self).check_positive()
-    def assert_le(self, other, err=None): (other-self).assert_positive(err)
+    def __le__(self, other):
+        return (other-self).check_positive()
+
+    def assert_le(self, other, err=None):
+        other = LinComb._ensurelc(other)
+
+        if not ignore_errors():
+            if self.value > other.value:
+                raise AssertionError(err if err is not None else str(self.value) + " is not less than or equal to " + str(other.value))
+
+        (other-self).assert_positive(err=err)
     
-    def __eq__(self, other): return (self-other).check_zero()
-    def assert_eq(self, other, err=None): (self-other).assert_zero(err)
+    def __eq__(self, other):
+        return (self-other).check_zero()
+
+    def assert_eq(self, other, err=None):
+        other = LinComb._ensurelc(other)
+
+        if not ignore_errors():
+            if self.value != other.value:
+                raise AssertionError(err if err is not None else str(self.value) + " is not equal to " + str(other.value))
+
+        (self-other).assert_zero(err=err)
         
-    def __ne__(self, other): return 1-(self==other)
-    def assert_ne(self, other, err=None): (self-other).assert_nonzero(err)
+    def __ne__(self, other):
+        return (self-other).check_nonzero()
+
+    def assert_ne(self, other, err=None):
+        other = LinComb._ensurelc(other)
+
+        if not ignore_errors():
+            if self.value == other.value:
+                raise AssertionError(err if err is not None else str(self.value) + " is equal to " + str(other.value))
+
+        (self-other).assert_nonzero(err=err)
         
     # self>other, so self-other>0, so self-other-1>=0
-    def __gt__(self, other): return (self-other-1).check_positive()
-    def assert_gt(self, other, err=None): (self-other-1).assert_positive(err)
-        
+    def __gt__(self, other):
+        return (self-other-1).check_positive()
+
+    def assert_gt(self, other, err=None):
+        other = LinComb._ensurelc(other)
+
+        if not ignore_errors():
+            if self.value <= other.value:
+                raise AssertionError(err if err is not None else str(self.value) + " is not greater than " + str(other.value))
+
+        (self-other-1).assert_positive(err=err)
+
     # self>=other, so self-other>=0
-    def __ge__(self, other): return (self-other).check_positive()
-    def assert_ge(self, other, err=None): (self-other).assert_positive(err)
+    def __ge__(self, other):
+        return (self-other).check_positive()
+
+    def assert_ge(self, other, err=None):
+        other = LinComb._ensurelc(other)
+
+        if not ignore_errors():
+            if self.value < other.value:
+                raise AssertionError(err if err is not None else str(self.value) + " is not greater than or equal to " + str(other.value))
+
+        (self-other).assert_positive(err=err)
         
     def __bool__(self):
         raise NotImplementedError("Cannot call __bool__ on a LinComb. \
@@ -402,29 +456,38 @@ class LinComb:
             return res
         return NotImplemented
     
-    def _check_both_bits(self, other):
-        if ignore_errors(): return
-        
-        if self.value !=0 and self.value!=1: raise ValueError("not a bit: " + str(self.value))
-            
-        if isinstance(other, LinComb) and (other.value==0 or other.value==1): return
-        if is_base_value(other) and (other==0 or other==1): return
-        raise ValueError("not a bit: " + str(other))
-    
     def __and__(self, other):
         """ Bitwise and &. Cost: 1 constraint """
-        self._check_both_bits(other)
-        return self * other
+        if isinstance(other, int):
+            return PrivVal(self.value & other)
+        if isinstance(other, LinComb):
+            self_bits = self.to_bits()
+            other_bits = other.to_bits()
+            res = [x * y for (x,y) in zip(self_bits, other_bits)]
+            return LinComb.from_bits(res)
+        return NotImplemented
 
     def __xor__(self, other):
         """Bitwise exclusive-or ^. Cost: 1 constraint """
-        self._check_both_bits(other)
-        return self + other - 2 * self * other
+        if isinstance(other, int):
+            return PrivVal(self.value ^ other)
+        if isinstance(other, LinComb):
+            self_bits = self.to_bits()
+            other_bits = other.to_bits()
+            res = [x + y - 2 * x * y for (x,y) in zip(self_bits, other_bits)]
+            return LinComb.from_bits(res)
+        return NotImplemented
 
     def __or__(self, other):
         """Bitwise or |. Cost: 1 constraint """
-        self._check_both_bits(other)
-        return self + other - self * other
+        if isinstance(other, int):
+            return PrivVal(self.value | other)
+        if isinstance(other, LinComb):
+            self_bits = self.to_bits()
+            other_bits = other.to_bits()
+            res = [x + y - x * y for (x,y) in zip(self_bits, other_bits)]
+            return LinComb.from_bits(res)
+        return NotImplemented
 
     __radd__ = __add__
     __rmul__ = __mul__
@@ -483,99 +546,169 @@ class LinComb:
     def __floor__(self): return NotImplemented
     def __ceil__(self): return NotImplemented
 
-    def assert_bool(self, err=None):
-        if (not ignore_errors()) and (self.value!=0 and self.value!=1):
-            raise ValueError(err if err is not None else "expected bool, got " + str(self.value))
+    def to_bits(self, bits=None):
+        """
+        Splits an integer LinComb into an bitlength-length array of LinCombBool bits
+        Raises AssertionError if LinComb cannot be represented with bitlength bits
+        Costs 2 * bitlength + 1 constraints to split a LinComb into bits
+        """
+        from pysnark.boolean import PrivValBool
         
-        add_constraint(self, 1-self, LinComb.ZERO)
+        if bits is None:
+            bits = bitlength
 
-    def assert_bool_unsafe(self, err=None):
-        if (not ignore_errors()) and (self.value!=0 and self.value!=1):
-            raise ValueError(err if err is not None else "expected bool, got " + str(self.value))
+        if not ignore_errors():
+            if self.value < 0 or self.value.bit_length() > bits:
+                raise AssertionError(str(self.value) + " is not a " + str(bits) + "-bit positive integer")
+
+        # Construct bits
+        bits = [PrivValBool((self.value & (1 << ix)) >> ix) for ix in range(bits)]
         
-        add_constraint_unsafe(self, LinComb.ONE_SAFE-self, LinComb.ZERO)
-        
-    def to_bits(self, bits=bitlength):
-        if (not ignore_errors()) and (self.value<0 or self.value.bit_length()>bits):
-            raise ValueError("value " + str(self.value) + " is not a " + str(bits) + "-bit positive integer")
-            
-        bits = [PrivVal((self.value&(1<<ix))>>ix) for ix in range(bits)]
-        for bit in bits: bit.assert_bool_unsafe()
-            
-        (self-LinComb.from_bits(bits)).assert_zero()
+        # Check that bits are equal to self
+        (self - LinComb.from_bits(bits)).assert_zero()
         
         return bits
         
     @classmethod
     def from_bits(cls, bits):
-        return sum([biti*(1<<i) for (i,biti) in enumerate(bits)])
-        
+        """
+        Constructs an integer LinComb out of an array of LinCombBool bits
+        Costs 0 constraints to construct a LinComb from bits
+        """
+        return sum([biti * (1 << i) for (i,biti) in enumerate(bits)])
+
     """
     Given a value in [-1<<bitlength,1>>bitlength], check if it is positive.
     Note that this works on (bitlength+1)-length values so it works for
     __lt__, etc on bitlength-length values
     """
     def check_positive(self, bits=None):
-        if bits is None: bits=bitlength
-            
-        if (is_guard()) and self.value.bit_length()<=bits:
-            ret = PrivVal(1 if self.value>=0 else 0)
-            abs = self.value if self.value>=0 else -self.value
-            bits = [PrivVal((abs&(1<<ix))>>ix) for ix in range(bits)]
+        """
+        Checks if a LinComb is a positive bitlength-bit integer
+        Costs 2 * bitlength + 3 constraints
+        """
+        from pysnark.boolean import PrivValBool
+
+        if bits is None:
+            bits = bitlength
+
+        if is_guard() and self.value.bit_length() <= bits:
+            ret = PrivValBool(1 if self.value >= 0 else 0)
+            abs = self.value if self.value >= 0 else -self.value
+
+            bits = [PrivValBool((abs & (1 << ix)) >> ix) for ix in range(bits)]
         elif ignore_errors():
-            ret = PrivVal(0)
-            bits = [PrivVal(0) for _ in range(bits)]
+            ret = PrivValBool(0)
+            bits = [PrivValBool(0) for _ in range(bits)]
         else:
-            raise ValueError("value " + str(self.value) + " is not a " + str(bits) + "-bit integer")
-            
-        for bit in bits: bit.assert_bool_unsafe()
+            raise ValueError(str(self.value) + " is not a " + str(bits) + "-bit integer")
         
-        # if ret==1, then requires that 2*self=self+sum, so sum=self
-        # if ret==0, this requires that 0=self+sum, so sum=-self
-        add_constraint(2*ret, self, self+LinComb.from_bits(bits))
+        # If ret == 1, then requires that 2 * self = self + sum, so sum = self
+        # If ret == 0, this requires that 0 = self + sum, so sum = -self
+        add_constraint(2 * ret, self, self + LinComb.from_bits(bits))
         
         return ret
             
     def assert_positive(self, bits=None, err=None):
-        if bits is None: bits=bitlength
-            
-        if (not ignore_errors()) and (self.value<0 or self.value.bit_length()>bits):
-            raise ValueError(err if err is not None else "value " + str(self.value) + " is not a " + str(bits) + "-bit positive integer")
+        """
+        Ensures a LinComb is a positive bitlength-bit integer
+        Costs 2 * bitlength + 1 constraints
+        """
 
-        self.to_bits(bits)
+        if bits is None:
+            bits = bitlength
+
+        if not ignore_errors():
+            if self.value < 0 or self.value.bit_length() > bits:
+                raise AssertionError(err if err is not None else str(self.value) + " is not a " + str(bits) + "-bit positive integer")
+
+        self.to_bits()
         
     def check_zero(self):
-        ret = PrivVal(1 if self.value==0 else 0)
-        
-        wit = PrivVal(backend.fieldinverse(self.value+ret.value))  # add ret.value so always nonzero
+        """
+        Checks whether a LinComb is zero
+        Costs 4 constraints
+        """
+        from pysnark.boolean import LinCombBool
+
+        ret = PrivVal(1 if self.value == 0 else 0)
+        wit = PrivVal(backend.fieldinverse(self.value + (self.value == 0))) # Add self.value == 0 to prevent ZeroDivisionError
         
         # Trick from Pinocchio paper: if self is zero then ret=1 by first eq,
         # if self is nonzero then ret=0 by second eq
-        add_constraint_unsafe(self, wit, LinComb.ONE_SAFE-ret)
+        add_constraint_unsafe(self, wit, LinComb.ONE_SAFE - ret)
         add_constraint_unsafe(self, ret, LinComb.ZERO)
-        
-        return ret
+
+        return LinCombBool(ret)
+
+    def check_nonzero(self):
+        """
+        Checks whether a LinComb is nonzero
+        Costs 4 constraints
+        """
+        from pysnark.boolean import LinCombBool
+
+        ret = PrivVal(1 if self.value != 0 else 0)
+        wit = PrivVal(backend.fieldinverse(self.value + (self.value == 0)))  # Add self.value == 0 to prevent ZeroDivisionError
+
+        # Use nonzero check gadget from Bulletproofs
+        add_constraint_unsafe(self, 1 - ret, LinComb.ZERO)
+        add_constraint_unsafe(self, wit, ret)
+
+        return LinCombBool(ret)
     
     def assert_zero(self, err=None):
+        """
+        Ensures a LinComb is zero
+        Costs 1 constraint
+        """
         if (not ignore_errors()) and self.value!=0:
-            raise ValueError(err if err is not None else "value " + str(self.value) + " is not zero")
+            raise AssertionError(err if err is not None else str(self.value) + " is not zero")
             
-        add_constraint(LinComb.ZERO, LinComb.ZERO, self)        
+        add_constraint(LinComb.ZERO, LinComb.ZERO, self)
             
     def assert_nonzero(self, err=None):
+        """
+        Ensures a LinComb is nonzero
+        Costs 1 constraint
+        """
         if (is_guard()) and self.value!=0:
             wit = PrivVal(backend.fieldinverse(self.value))    
         elif ignore_errors():
             wit = PrivVal(0)
         else:
-            raise ValueError(err if err is not None else "value " + str(self.value) + " is not zero")
+            raise AssertionError(err if err is not None else str(self.value) + " is zero")
         
         add_constraint(self, wit, LinComb.ONE, check=False)
-        
-    def if_else(self, ifval, elseval):
-        from .branching import if_then_else
-        return if_then_else(self, ifval, elseval)
-    
+
+    def assert_range(self, rangemin, rangemax, err=None):
+        """
+        Ensures a LinComb is within the range [rangemin, rangemax]
+        Costs 4 * bitlength + 3 constraints
+        """
+        rangemin = LinComb._ensurelc(rangemin)
+        rangemax = LinComb._ensurelc(rangemax)
+
+        if not ignore_errors():
+            if self.value < rangemin.value or self.value >= rangemax.value:
+                raise AssertionError(err if err is not None else str(self.value) + " is not in the range [" + str(rangemin.value) + "," + str(rangemax.value) + "]")
+
+        # Use bounds check gadget from Bulletproofs
+        a = self - rangemin
+        b = rangemax - self
+
+        (a + b).assert_eq(rangemax - rangemin, err)
+        a.assert_positive()
+        b.assert_positive()
+
+    @classmethod
+    def _ensurelc(cls, val):
+        if isinstance(val, LinComb):
+            return val
+        if isinstance(val, int):
+            return LinComb.ONE * val
+        raise RuntimeError("Wrong type for LinComb")
+
 LinComb.ZERO = LinComb(0, backend.zero())
 LinComb.ONE = LinComb(1, backend.one())
 LinComb.ONE_SAFE = LinComb.ONE
@@ -630,14 +763,17 @@ Can be used as a decorator, e.g.,
 def snark(fn):
     def snark__(*args, **kwargs):
         from pysnark.fixedpoint import PubValFxp, LinCombFxp
+        from pysnark.boolean import PubValBool, LinCombBool
 
         if kwargs: raise ValueError("@snark-decorated functions cannot have keyword arguments")
 
         argscopy = for_each_in(lambda x: PubVal(x) if isinstance(x,int) else x, args)
         argscopy = for_each_in(lambda x: PubValFxp(x) if isinstance(x,float) else x, argscopy)
+        argscopy = for_each_in(lambda x: PubValBool(x) if isinstance(x,bool) else x, argscopy)
         ret = fn(*argscopy, **kwargs)
         retcopy = for_each_in(lambda x: x.val() if isinstance(x,LinComb) else x, ret)
         retcopy = for_each_in(lambda x: x.val() if isinstance(x,LinCombFxp) else x, retcopy)
+        retcopy = for_each_in(lambda x: x.val() if isinstance(x,LinCombBool) else x, retcopy)
 
         return retcopy
         

@@ -31,6 +31,7 @@
 import warnings
 import pysnark.runtime
 from pysnark.runtime import LinComb, PrivVal, PubVal, ConstVal
+from pysnark.boolean import LinCombBool
 
 """
 Support for fixed-point computations
@@ -53,7 +54,7 @@ class LinCombFxp:
         Converts an integer, float, or LinComb into the internal fixed point representation
         Does not convert the input into a LinCombFxp
         """
-        if isinstance(val, LinComb):
+        if isinstance(val, LinComb) or isinstance(val, LinCombBool):
             return val * (1 << resolution)
         if isinstance(val, int):
             return val * (1 << resolution)
@@ -79,7 +80,7 @@ class LinCombFxp:
         return LinCombFxp.remove_scaling(self.lc.val())
 
     def __repr__(self):
-        return "{" + str(self.val()) + "}"
+        return "{" + str(self.lc.value) + "}"
     
     @classmethod
     def _ensurefxp(cls, val):
@@ -89,13 +90,13 @@ class LinCombFxp:
         """
         if isinstance(val, LinCombFxp):
             return val
-        if isinstance(val, LinComb):
+        if isinstance(val, LinComb) or isinstance(val, LinCombBool):
             val = LinCombFxp.add_scaling(val)
-            return LinCombFxp(val)
+            return LinCombFxp(val)    
         if isinstance(val, int) or isinstance(val, float):
             val = LinCombFxp.add_scaling(val)
             return LinCombFxp(ConstVal(val))
-        raise RuntimeError("Wrong type for _ensurefxp")
+        raise RuntimeError("Wrong type for LinCombFxp")
     
     def __add__(self, other):
         """
@@ -231,7 +232,7 @@ class LinCombFxp:
     
     def __abs__(self):
         from .branching import if_then_else
-        return if_then_else(self>=0, self, -self)
+        return if_then_else(self >= 0, self, -self)
 
     def __int__(self): raise NotImplementedError("Should not run int() on LinComb")
         
@@ -240,10 +241,6 @@ class LinCombFxp:
     def check_zero(self): return self.lc.check_zero()
     def assert_zero(self): self.lc.assert_zero()
     def assert_nonzero(self): self.lc.assert_nonzero()
-        
-    def __if_then_else__(self, other, cond):
-        falsev = self._ensurefxp(other).lc
-        return LinCombFxp(falsev+(self.lc-falsev)*cond)
 
 def PubValFxp(val, doconvert=True):
     if doconvert:
