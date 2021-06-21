@@ -113,6 +113,10 @@ class LinCombFxp:
     __radd__ = __add__
     
     def __sub__(self, other):
+        """
+        Subtracts a LinCombFxp by an integer, float, LinComb, or another LinCombFxp
+        Costs 0 constraints
+        """
         return self + (-other)
     
     def __rsub__(self, other):
@@ -157,18 +161,33 @@ class LinCombFxp:
         return NotImplemented
          
     def __floordiv__(self, other):
+        """
+        Divides LinCombFxp by an integer, float, LinComb, or LinCombFxp using floor division
+        Costs 0 constraints to divide modulo an integer or float
+        Costs 2 * bitlength + 4 constraints to divide modulo a LinComb or LinCombFxp
+        """
         res = self.__divmod__(other)
         if res is NotImplemented:
             return NotImplemented
         return res[0]
 
     def __mod__(self, other):
+        """
+        Returns the remainder of a LinCombFxp divided with an integer, float, LinComb, or LinCombFxp 
+        Costs 0 constraints to divide modulo an integer or float
+        Costs 2 * bitlength + 4 constraints to divide modulo a LinComb or LinCombFxp
+        """
         res = self.__divmod__(other)
         if res is NotImplemented:
             return NotImplemented
         return res[1]
         
     def __divmod__(self, divisor):
+        """
+        Divides a LinCombFxp with an integer, float, LinComb, or LinCombFxp and returns the quotient and the remainder
+        Costs 0 constraints to divide with an integer or a float
+        Costs 2 * bitlength + 4 constraints to divide with a LinComb or a LinCombFxp
+        """
         if isinstance(divisor, int) or isinstance(divisor, float) or isinstance(divisor, LinComb):
             divisor = LinCombFxp.add_scaling(divisor)
             res = self.lc.__divmod__(divisor)
@@ -215,13 +234,17 @@ class LinCombFxp:
     def __bool__(self): return bool(self.lc)
         
     def __pow__(self, other, mod=None):
-        """ Exponentiation with public integral power p>=0 """
+        """
+        Raises a LinCombFxp to the power of an integer
+        Costs n-1 constraints to raise to the power n
+        The exponent n must be <= 31 to prevent Python crashing
+        """
         if mod!=None: raise ValueError("cannot provide modulus")
-        if not is_base_value(other): return NotImplemented
+        if not isinstance(other, int): return NotImplemented
         if other<0: raise ValueError("exponent cannot be negative", other)
-        if other==0: return LinCombFxp(add_scaling(LinComb.ONE))
+        if other==0: return LinCombFxp(LinCombFxp.add_scaling(LinComb.ONE))
         if other==1: return self
-        return self*pow(self, other-1)
+        return self * self ** (other - 1)
     
     def __lshift__(self, other): return LinCombFxp(self.lc<<other)
 
@@ -239,8 +262,13 @@ class LinCombFxp:
     def check_positive(self): return self.lc.check_positive()
     def assert_positive(self): self.lc.assert_positive()
     def check_zero(self): return self.lc.check_zero()
+    def check_nonzero(self): return self.lc.check_nonzero()
     def assert_zero(self): self.lc.assert_zero()
     def assert_nonzero(self): self.lc.assert_nonzero()
+    def assert_range(self, minrange, maxrange):
+        minrange = LinCombFxp._ensurefxp(minrange)
+        maxrange = LinCombFxp._ensurefxp(maxrange)
+        self.lc.assert_range(minrange.lc, maxrange.lc)
 
 def PubValFxp(val, doconvert=True):
     if doconvert:

@@ -157,8 +157,11 @@ def if_guard(fn):
 
 igprint = if_guard(print)
 
-""" Add constraint v*w=y to the constraint system, and update running computation hash. """
 def add_constraint(v,w,y,check=True):
+    """
+    Add the constraint v * w = y to the constraint system
+    Updates running computation hash
+    """
     if not guard is None:
         dummy = PrivVal(v.value*w.value-y.value)
         add_constraint_unsafe(v,w,y+dummy)
@@ -343,7 +346,7 @@ class LinComb:
         """
         Returns the remainder of a LinComb divided with an integer or another LinComb
         Costs 0 constraints to divide modulo an integer
-        Costs 1 constraint to divide modulo a LinComb
+        Costs 2 * bitlength + 4 constraints to divide modulo a LinComb
         """
         res = self.__divmod__(other)
         if res is NotImplemented:
@@ -354,7 +357,7 @@ class LinComb:
         """
         Divides a LinComb with an integer or another LinComb and returns the quotient and the remainder
         Costs 0 constraints to divide with an integer
-        Costs 3 constraints to divide with a LinComb
+        Costs 2 * bitlength + 4 constraints to divide with a LinComb
         """
         if isinstance(divisor, int):
             if divisor == 0:
@@ -384,8 +387,9 @@ class LinComb:
     def __pow__(self, other, mod=None):
         """
         Raises a LinComb to the power of an integer or a LinComb
-        Costs 0 constraints to raise to the power of an integer
-        Costs ? constraints to raise to the power of a LinComb
+        Costs n constraints to raise to an integer power n
+        Costs 41 constraints to raise to the power of a LinComb,
+        The exponent n must be <= 31 to prevent Python crashing
         """
         if mod != None:
             raise ValueError("Cannot provide modulus")
@@ -429,7 +433,8 @@ class LinComb:
         """
         Shifts a LinComb bitwise to the left
         Costs 0 constraints to shift by an integer number of bits
-        Costs ? constraints to raise to the power of a LinComb
+        Costs 42 constraints to shift by a LinComb number of bits,
+        given 41 operations to raise a LinComb to the power of a LinComb
         """
         if isinstance(other, int):
             res = self * (1 << other)
@@ -447,7 +452,7 @@ class LinComb:
         """
         Shifts a LinComb bitwise to the right
         Costs 0 constraints to shift by an integer number of bits
-        Costs ? constraints to raise to the power of a LinComb
+        Costs 2 * bitlength + 45 constraints shift by a LinComb number of bits
         """
         if isinstance(other, int):
             res = self // (1 << other)
@@ -462,7 +467,11 @@ class LinComb:
         return NotImplemented
     
     def __and__(self, other):
-        """ Bitwise and &. Cost: 1 constraint """
+        """
+        Computes the bitwise and of a LinComb with an integer or a LinComb
+        Costs 0 operations to and with an integer
+        Costs 3 * bitlength + 3 operations to and with a LinComb 
+        """
         if isinstance(other, int):
             return PrivVal(self.value & other)
         if isinstance(other, LinComb):
@@ -473,7 +482,11 @@ class LinComb:
         return NotImplemented
 
     def __xor__(self, other):
-        """Bitwise exclusive-or ^. Cost: 1 constraint """
+        """
+        Computes the bitwise xor of a LinComb with an integer or a LinComb
+        Costs 0 operations to xor with an integer
+        Costs 3 * bitlength + 3 operations to xor with a LinComb
+        """
         if isinstance(other, int):
             return PrivVal(self.value ^ other)
         if isinstance(other, LinComb):
@@ -484,7 +497,11 @@ class LinComb:
         return NotImplemented
 
     def __or__(self, other):
-        """Bitwise or |. Cost: 1 constraint """
+        """
+        Computes the bitwise or of a LinComb with an integer or a LinComb
+        Costs 0 operations to or with an integer
+        Costs 3 * bitlength + 3 operations to or with a LinComb
+        """
         if isinstance(other, int):
             return PrivVal(self.value | other)
         if isinstance(other, LinComb):
@@ -536,8 +553,8 @@ class LinComb:
         return if_then_else(self>=0, self, -self)
 
     def __invert__(self):
-        # we do not want to do ~1=0 and ~0=1 since this is also not true for native ints
-        raise NotImplementedError("Operator ~ not supported. For binary not, use 1-x")
+        inverted_bits = [~x for x in self.to_bits()]
+        return LinComb.from_bits(inverted_bits)
         
     def __complex__(self): return NotImplemented
     def __int__(self): raise NotImplementedError("Should not run int() on LinComb")
@@ -555,7 +572,7 @@ class LinComb:
         """
         Splits an integer LinComb into an bitlength-length array of LinCombBool bits
         Raises AssertionError if LinComb cannot be represented with bitlength bits
-        Costs 2 * bitlength + 1 constraints to split a LinComb into bits
+        Costs bitlength + 1 constraints to split a LinComb into bits
         """
         from pysnark.boolean import PrivValBool
         
@@ -590,7 +607,7 @@ class LinComb:
     def check_positive(self, bits=None):
         """
         Checks if a LinComb is a positive bitlength-bit integer
-        Costs 2 * bitlength + 3 constraints
+        Costs bitlength + 2 constraints
         """
         from pysnark.boolean import PrivValBool
 
@@ -617,7 +634,7 @@ class LinComb:
     def assert_positive(self, bits=None, err=None):
         """
         Ensures a LinComb is a positive bitlength-bit integer
-        Costs 2 * bitlength + 1 constraints
+        Costs bitlength + 1 constraints
         """
 
         if bits is None:
@@ -632,7 +649,7 @@ class LinComb:
     def check_zero(self):
         """
         Checks whether a LinComb is zero
-        Costs 4 constraints
+        Costs 3 constraints
         """
         from pysnark.boolean import LinCombBool
 
@@ -649,7 +666,7 @@ class LinComb:
     def check_nonzero(self):
         """
         Checks whether a LinComb is nonzero
-        Costs 4 constraints
+        Costs 3 constraints
         """
         from pysnark.boolean import LinCombBool
 
@@ -689,14 +706,14 @@ class LinComb:
     def assert_range(self, rangemin, rangemax, err=None):
         """
         Ensures a LinComb is within the range [rangemin, rangemax]
-        Costs 4 * bitlength + 3 constraints
+        Costs 2 * bitlength + 3 constraints
         """
         rangemin = LinComb._ensurelc(rangemin)
         rangemax = LinComb._ensurelc(rangemax)
 
         if not ignore_errors():
             if self.value < rangemin.value or self.value >= rangemax.value:
-                raise AssertionError(err if err is not None else str(self.value) + " is not in the range [" + str(rangemin.value) + "," + str(rangemax.value) + "]")
+                raise AssertionError(err if err is not None else str(self.value) + " is not in the range [" + str(rangemin.value) + "," + str(rangemax.value) + ")")
 
         # Use bounds check gadget from Bulletproofs
         a = self - rangemin

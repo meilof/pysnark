@@ -3,14 +3,14 @@ from pysnark.runtime import LinComb, ConstVal, PrivVal, PubVal, add_constraint
 
 """
 Support for Boolean values
-Costs 0 constraints to convert a LinComb to a LinCombBool
+Costs 1 constraint to convert a LinComb to a LinCombBool
 """
 
 class LinCombBool:
-    def __init__(self, lc):
+    def __init__(self, lc, constrain=True):
         """
         Constructs a LinCombBool
-        Costs 2 constraints
+        Costs 1 constraint
         """
         if not isinstance(lc, LinComb):
             raise RuntimeError("Wrong type for LinCombBool")
@@ -18,7 +18,8 @@ class LinCombBool:
             raise ValueError("LinCombBool can only take Boolean values")
         
         # Add boolean constraint to circuit
-        add_constraint(lc, 1 - lc, LinComb.ZERO)
+        if constrain:
+            add_constraint(lc, 1 - lc, LinComb.ZERO)
         
         self.lc = lc
 
@@ -59,12 +60,28 @@ class LinCombBool:
         raise RuntimeError("Wrong type for LinCombBool")
     
     def __add__(self, other):
+        """
+        Performs an arithmetic addition with an integer or a LinComb
+        Returns a LinComb
+        Costs 0 constraints
+        """
         return self.lc + other
 
     def __sub__(self, other):
+        """
+        Performs an arithmetic subtraction by an integer or a LinComb
+        Returns a LinComb
+        Costs 0 constraints
+        """
         return self.lc - other
 
     def __mul__(self, other):
+        """
+        Performs an arithmetic multiplication with an integer or a LinComb
+        Returns a LinComb
+        Costs 0 constraints to multiply with an integer
+        Costs 1 constraint to multiply with a LinComb
+        """
         return self.lc * (other)
     
     def __truediv__(self, other): 
@@ -83,6 +100,11 @@ class LinCombBool:
     __rmul__ = __mul__
 
     def __rsub__(self, other):
+        """
+        Performs an arithmetic subtraction by an integer or a LinComb
+        Returns a LinComb
+        Costs 0 constraints
+        """
         return other + (-self.lc)
 
     def __rtruediv__(self, other):
@@ -91,12 +113,18 @@ class LinCombBool:
     def __neg__(self):
         """
         Performs an arithmetic negation
+        Returns a LinComb
         Costs 0 constraints
         """
         return -self.lc
     
     def __invert__(self):
-        return ConstVal(1) - self.lc
+        """
+        Performs a logical not
+        Returns a LinCombBool
+        Costs 1 constraint
+        """
+        return LinCombBool(1 - self.lc, False)
 
     def __and__(self, other):
         """
@@ -105,9 +133,9 @@ class LinCombBool:
         Costs 1 constraint to AND with a LinComb
         """
         if isinstance(other, int):
-            return LinCombBool(self.lc * other)
+            return LinCombBool(self.lc * other, False)
         other = LinCombBool._ensurebool(other)
-        return LinCombBool(self.lc * other.lc)
+        return LinCombBool(self.lc * other.lc, False)
 
     def __xor__(self, other):
         """
@@ -116,9 +144,9 @@ class LinCombBool:
         Costs 1 constraint to XOR with a LinComb
         """
         if isinstance(other, int):
-            return LinCombBool(self + other - 2 * self * other)
+            return LinCombBool(self + other - 2 * self * other, False)
         other = LinCombBool._ensurebool(other)
-        return LinCombBool(self.lc + other.lc - 2 * self.lc * other.lc)
+        return LinCombBool(self.lc + other.lc - 2 * self.lc * other.lc, False)
 
     def __or__(self, other):
         """
@@ -127,9 +155,9 @@ class LinCombBool:
         Costs 1 constraint to OR with a LinComb
         """
         if isinstance(other, int):
-            return LinCombBool(self.lc * other)
+            return LinCombBool(self.lc * other, False)
         other = LinCombBool._ensurebool(other)
-        return LinCombBool(self.lc + other.lc - self.lc * other.lc)
+        return LinCombBool(self.lc + other.lc - self.lc * other.lc, False)
 
     def __eq__(self, other): return self.lc == self._ensurebool(other).lc
     def __ne__(self, other): return self.lc != self._ensurebool(other).lc
@@ -150,6 +178,11 @@ class LinCombBool:
             Instead of if statements, use if_then_else from pysnark.branching")
         
     def __pow__(self, other, mod=None):
+        """
+        Raises a LinCombBool to the power of an integer, LinComb, or LinCombBool
+        Returns a LinComb
+        Costs 36 constraints
+        """
         return self.lc.__pow__(other, mod)
     
     def __lshift__(self, other):
