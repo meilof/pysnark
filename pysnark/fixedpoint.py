@@ -28,107 +28,171 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+import warnings
 import pysnark.runtime
-from pysnark.runtime import LinComb, is_base_value, PrivVal, PubVal
+from pysnark.runtime import LinComb, PrivVal, PubVal, ConstVal
 
 """
 Support for fixed-point computations
+Costs 0 constraints to convert a LinComb to a LinCombFxp
+A float x is represented as the integer x * (1 << res)
 """
 
+# Fixed point resolution
+resolution = 8
+
 class LinCombFxp:
-    """
-    Variable representing a fixed-point number. Number x is represented as integer
-    :math:`x * 2^r`, where r is the resolution :py:data:`VarFxp.res`
-    """
-    
-    res = 8
-
     def __init__(self, lc):
-        if not isinstance(lc, LinComb): raise RuntimeError("wrong type for LinCombFxp")
+        if not isinstance(lc, LinComb):
+            raise RuntimeError("Wrong type for LinCombFxp")
         self.lc = lc
-
-    @classmethod
-    def fromvar(cls, var, doconvert):
-        if not isinstance(var, LinComb): raise RuntimeError("wrong type for fromvar")
-        if doconvert:
-            return cls(var*(1<<LinCombFxp.res))
-        else:
-            return cls(var)
     
     @classmethod
-    def tofloat(self, val):
-        return float(val)/(1<<LinCombFxp.res)
+    def add_scaling(cls, val):
+        """
+        Converts an integer, float, or LinComb into the internal fixed point representation
+        Does not convert the input into a LinCombFxp
+        """
+        if isinstance(val, LinComb):
+            return val * (1 << resolution)
+        if isinstance(val, int):
+            return val * (1 << resolution)
+        if isinstance(val, float):
+            res = val * (1 << resolution)
+            if res - int(res) != 0:
+                warnings.warn("Potential data loss due to low fixed point resolution")
+            return int(res)
+        raise RuntimeError("Wrong type for add_scaling")
+
+    @classmethod
+    def remove_scaling(self, val):
+        """
+        Converts an internal fixed point representation into a float value
+        """
+        if isinstance(val, LinComb):
+            return float(val.val()) / (1 << resolution)
+        if isinstance(val, int) or isinstance(val, float):
+            return float(val) / (1 << resolution)
+        raise RuntimeError("Wrong type for add_scaling")
     
     def val(self):
-        return LinCombFxp.tofloat(self.lc.val())
+        return LinCombFxp.remove_scaling(self.lc.val())
 
     def __repr__(self):
-        return "{"+str(LinCombFxp.tofloat(self.lc.value))+"}"
+        return "{" + str(self.val()) + "}"
     
     @classmethod
     def _ensurefxp(cls, val):
-        if isinstance(val,LinCombFxp):
+        """
+        Converts an integer, float, or LinComb into the internal fixed point representation
+        and converts the input into a LinCombFxp
+        """
+        if isinstance(val, LinCombFxp):
             return val
-        elif isinstance(val,LinComb):
-            return cls.fromvar(val, True)
-        else:
-            v = _tofxpval(val, True)
-            return cls(LinComb.ONE*v)
+        if isinstance(val, LinComb):
+            val = LinCombFxp.add_scaling(val)
+            return LinCombFxp(val)
+        if isinstance(val, int) or isinstance(val, float):
+            val = LinCombFxp.add_scaling(val)
+            return LinCombFxp(ConstVal(val))
+        raise RuntimeError("Wrong type for _ensurefxp")
     
     def __add__(self, other):
-        other = self._ensurefxp(other)
-        return LinCombFxp(self.lc+other.lc)
-        
+        """
+        Adds a LinCombFxp with an integer, float, LinComb, or another LinCombFxp
+        Costs 0 constraints
+        """
+        if isinstance(other, int) or isinstance(other, float) or isinstance(other, LinComb):
+            other = LinCombFxp.add_scaling(other)
+            return LinCombFxp(self.lc + other)
+        if isinstance(other, LinCombFxp):
+            return LinCombFxp(self.lc + other.lc)
+        return NotImplemented
+
     __radd__ = __add__
     
     def __sub__(self, other):
-        return self+(-other)
+        return self + (-other)
     
     def __rsub__(self, other):
-        return other+(-self)    
+        return other + (-self)
 
     def __mul__(self, other):
-        if is_base_value(other):
-            return LinCombFxp(self.lc*other)
-        
-        other = self._ensurefxp(other)
-        if other is NotImplemented: return NotImplemented
-        
-        ret = LinCombFxp(PrivVal((self.lc.value*other.lc.value+(1<<(LinCombFxp.res-1)))>>LinCombFxp.res))
-            
-        # mul error: should be in [-2^f,2^f]
-        diff = (1<<LinCombFxp.res)*ret.lc-self.lc*other.lc
-        (diff + (1<<LinCombFxp.res)).assert_positive(LinCombFxp.res+1)
-        ((1<<LinCombFxp.res) - diff).assert_positive(LinCombFxp.res+1)
+        """
+        Multiplies a LinCombFxp with an integer, float, LinComb, or another LinCombFxp
+        Costs 0 constraints to multiply with an integer or a float
+        Costs 1 constraint to multiply with a LinComb or LinCombFxp
+        """
+        if isinstance(other, int):
+            return LinCombFxp(self.lc * other)
+        if isinstance(other, float):
+            other = LinCombFxp.add_scaling(other)
+            return LinCombFxp((self.lc * other) / (1 << resolution))
+        if isinstance(other, LinComb):
+            other = LinCombFxp.add_scaling(other)
+            return LinCombFxp((self.lc * other) / (1 << resolution))
+        if isinstance(other, LinCombFxp):
+            return LinCombFxp((self.lc * other.lc) / (1 << resolution))
+        return NotImplemented
 
-        return ret        
-    
     __rmul__ = __mul__
     
-    def __truediv__(self, other): 
-        other = self._ensurefxp(other)
-        if other is NotImplemented: return NotImplemented
-
-        ret = LinCombFxp(PrivVal(int(float(self.lc.value)*(1<<LinCombFxp.res)/float(other.lc.value)+0.5)))
-
-        # division error: should be in [-other,other]
-        df=self.lc*(1<<LinCombFxp.res)-ret.lc*other.lc
-        (other.lc-df).assert_positive()
-        (other.lc+df).assert_positive()
-        
-        return ret
+    def __truediv__(self, other):
+        """
+        Divides a LinCombFxp with an integer, float, LinComb, or another LinCombFxp
+        Costs 0 constraints to divide with an integer or a float
+        Costs 1 constraint to divide with a LinComb or LinCombFxp
+        """
+        if isinstance(other, int):
+            return LinCombFxp(self.lc / other)
+        if isinstance(other, float):
+            other = LinCombFxp.add_scaling(other)
+            return LinCombFxp(self.lc * (1 << resolution) / other)
+        if isinstance(other, LinComb):
+            other = LinCombFxp.add_scaling(other)
+            return LinCombFxp(self.lc * (1 << resolution) / other)
+        if isinstance(other, LinCombFxp):
+            return LinCombFxp(self.lc * (1 << resolution) / other.lc)
+        return NotImplemented
          
     def __floordiv__(self, other):
-        return NotImplemented
+        res = self.__divmod__(other)
+        if res is NotImplemented:
+            return NotImplemented
+        return res[0]
 
     def __mod__(self, other):
-        return NotImplemented
+        res = self.__divmod__(other)
+        if res is NotImplemented:
+            return NotImplemented
+        return res[1]
         
     def __divmod__(self, divisor):
-        return NotImplemented
+        if isinstance(divisor, int) or isinstance(divisor, float) or isinstance(divisor, LinComb):
+            divisor = LinCombFxp.add_scaling(divisor)
+            res = self.lc.__divmod__(divisor)
+        elif isinstance(divisor, LinCombFxp):
+            res = self.lc.__divmod__(divisor.lc)
+        else:
+            return NotImplemented
+        if res is NotImplemented:
+            return NotImplemented
+        quo, rem = res
+        quo = LinCombFxp(LinCombFxp.add_scaling(quo))
+        rem = LinCombFxp(rem)
+        return (quo,rem)
 
     def __rtruediv__(self, other):
-        return NotImplemented
+        other = LinCombFxp._ensurefxp(other)
+        return other.__truediv__(self)
+
+    def __rfloordiv__(self, other):
+        other = LinCombFxp._ensurefxp(other)
+        return other.__floordiv__(self)
+
+    def __rmod__(self, other):
+        other = LinCombFxp._ensurefxp(other)
+        return other.__mod__(self)
 
     def __neg__(self):
         return LinCombFxp(-self.lc)
@@ -154,11 +218,12 @@ class LinCombFxp:
         if mod!=None: raise ValueError("cannot provide modulus")
         if not is_base_value(other): return NotImplemented
         if other<0: raise ValueError("exponent cannot be negative", other)
-        if other==0: return LinCombFxp.fromvar(LinComb.ONE, True)
+        if other==0: return LinCombFxp(add_scaling(LinComb.ONE))
         if other==1: return self
         return self*pow(self, other-1)
     
     def __lshift__(self, other): return LinCombFxp(self.lc<<other)
+
     def __rshift__(self, other): return LinCombFxp(self.lc>>other)
         
     def __pos__(self):
@@ -179,19 +244,13 @@ class LinCombFxp:
     def __if_then_else__(self, other, cond):
         falsev = self._ensurefxp(other).lc
         return LinCombFxp(falsev+(self.lc-falsev)*cond)
-        
-def _tofxpval(val, doconvert):
-    if isinstance(val, float):
-        return int(val*(1<<LinCombFxp.res)+0.5)
-    elif doconvert:
-        return val*(1<<LinCombFxp.res)
-    else:
-        return val
-        
+
 def PubValFxp(val, doconvert=True):
-    val = _tofxpval(val, doconvert)
+    if doconvert:
+        val = LinCombFxp.add_scaling(val)
     return LinCombFxp(PubVal(val))
 
 def PrivValFxp(val, doconvert=True):
-    val = _tofxpval(val, doconvert)
+    if doconvert:
+        val = LinCombFxp.add_scaling(val)
     return LinCombFxp(PrivVal(val))
