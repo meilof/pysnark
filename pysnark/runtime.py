@@ -161,7 +161,7 @@ def add_constraint(v,w,y,check=True):
     else:
         if v.value*w.value!=y.value:
             # note that we do the check over the integers
-            if check and not ignore_errors(): raise ValueError("constraint did not hold")
+            if check and not ignore_errors(): raise AssertionError("constraint did not hold")
             
         add_constraint_unsafe(v,w,y)
 
@@ -172,7 +172,7 @@ class LinComb:
         
     def val(self):
         """ Creates a SNARK output for the current output and return its value """
-        (self-PubVal(self.value)).assert_zero()     
+        (self-PubVal(self.value)).assert_zero()
         return self.value
     
     def __repr__(self):
@@ -204,97 +204,203 @@ class LinComb:
     def assert_ge(self, other, err=None): (self-other).assert_positive(err)
         
     def __bool__(self):
-        raise NotImplementedError("Should not run bool() on a LinComb")
-        
+        raise NotImplementedError("Cannot call __bool__ on a LinComb. \
+            Instead of if statements, use if_then_else from pysnark.branching")
+
     def __add__(self, other):
+        """
+        Adds a LinComb with an integer or another LinComb
+        Costs 0 constraints
+        """
+        if isinstance(other, int):
+            return self + ConstVal(other)
         if isinstance(other, LinComb):
-            return LinComb(self.value+other.value, self.lc+other.lc)
-        elif is_base_value(other):
-            return self + other*LinComb.ONE
-        else:
-            return NotImplemented
-        
-    def __sub__(self, other):
-        return self+(-other)
+            return LinComb(self.value + other.value, self.lc + other.lc)
+        return NotImplemented
     
+    def __sub__(self, other):
+        """
+        Subtracts an integer or another LinComb from a LinComb
+        Costs 0 constraints
+        """
+        return self + (-other)
+
     def __mul__(self, other):
+        """
+        Multiplies a LinComb with an integer or another LinComb
+        Costs 0 constraints to multiply with an integer
+        Costs 1 constraint to multiply with a LinComb
+        """
+        if isinstance(other, int):
+            return LinComb(self.value * other, self.lc * other)
         if isinstance(other, LinComb):
-            retval = PrivVal(self.value*other.value)
+            retval = PrivVal(self.value * other.value)
             add_constraint_unsafe(self, other, retval)
             return retval
-        elif is_base_value(other):
-            return LinComb(self.value*other, self.lc*other)
-        else:
-            return NotImplemented
-                    
-    def __matmul__(self, other): return NotImplemented
-    
+        return NotImplemented
+
     def __truediv__(self, other): 
-        """ Proper division """
+        """
+        Divides a LinComb with an integer or another LinComb using integer division
+        Throws ValueError if values are not evenly divisible
+        Costs 0 constraints to divide with an integer
+        Costs 1 constraint to divide with a LinComb
+        """
+        if isinstance(other, int):
+            if other == 0:
+                raise ValueError("Division by zero")
+            if is_guard() and (self.value % other == 0):
+                return LinComb(self.value // other, self.lc * backend.fieldinverse(other))
+            if ignore_errors():
+                return LinComb.ZERO
+            raise ValueError(str(self.value) + " is not properly divisible by " + str(other))
+
         if isinstance(other, LinComb):
-            if (is_guard()) and self.value % other.value == 0:
-                res = PrivVal(self.value/other.value)
+            if other.value == 0:
+                raise ValueError("Division by zero")
+            elif is_guard() and (self.value % other.value == 0):
+                res = PrivVal(self.value // other.value)
             elif ignore_errors():
                 res = PrivVal(0)
             else:
                 raise ValueError(str(self.value) + " is not properly divisible by " + str(other.value))
             add_constraint(other, res, self)
             return res
-        elif is_base_value(other):
-            if self.value % other != 0:
-                raise ValueError(str(self.value) + " is not properly divisible by " + str(other))
-            return LinComb(self.value/other, self.lc*backend.fieldinverse(other))
-        else:
-            return NotImplemented
+
+        return NotImplemented
          
     def __floordiv__(self, other):
-        """ Division with rounding """
-        return self.__divmod__(other)[0]
+        """
+        Divides a LinComb with an integer or another LinComb using floor division
+        Costs 0 constraints to divide with an integer
+        Costs 1 constraint to divide with a LinComb
+        """
+        res = self.__divmod__(other)
+        if res is NotImplemented:
+            return NotImplemented
+        return res[0]
 
     def __mod__(self, other):
-        if other&(other-1)==0:
-            # this is faster for powers of two
-            return LinComb.from_bits(self.to_bits()[:other.bit_length()-1])
-        
-        return self.__divmod__(other)[1]
+        """
+        Returns the remainder of a LinComb divided with an integer or another LinComb
+        Costs 0 constraints to divide modulo an integer
+        Costs 1 constraint to divide modulo a LinComb
+        """
+        res = self.__divmod__(other)
+        if res is NotImplemented:
+            return NotImplemented
+        return res[1]
         
     def __divmod__(self, divisor):
-        """ Division by public value """
-        
-        if not is_base_value(divisor): return NotImplemented
-        
-        if divisor==0: raise ValueError("division by zero")
-        
-        quo = PrivVal(self.value//divisor)
-        rem = PrivVal(self.value-quo.value*divisor)
- 
-        rem.assert_positive(divisor.bit_length())
-        if divisor&(divisor-1)!=0: rem.assert_lt(divisor) # not needed for powers of two
-        quo.assert_positive()
-        (self-divisor*quo-rem).assert_zero()
-        
-        return (quo,rem)
+        """
+        Divides a LinComb with an integer or another LinComb and returns the quotient and the remainder
+        Costs 0 constraints to divide with an integer
+        Costs 3 constraints to divide with a LinComb
+        """
+        if isinstance(divisor, int):
+            if divisor == 0:
+                raise ValueError("Division by zero")
+            quo = ConstVal(self.value // divisor)
+            rem = ConstVal(self.value % divisor)
+            return (quo, rem)
+
+        if isinstance(divisor, LinComb):
+            if divisor.value == 0:
+                raise ValueError("Division by zero")
+            quo = PrivVal(self.value // divisor.value)
+            res = quo * divisor
+            rem = PrivVal(self.value - res.value)
+
+            # TODO: Prevent field overflow by a malicious prover
+            # Add a constraint ensuring quo * divisor + rem < backend.get_modulus()
+            # The check above works over the integers, but not in a finite field
+
+            add_constraint(quo, divisor, self - rem)
+            rem.assert_lt(divisor)
+            quo.assert_positive()
+            return (quo,rem)
+
+        return NotImplemented
     
     def __pow__(self, other, mod=None):
-        """ Exponentiation with public integral power p>=0 """
-        if mod!=None: raise ValueError("cannot provide modulus")
-        if not is_base_value(other): return NotImplemented
-        if other<0: raise ValueError("exponent cannot be negative", other)
-        if other==0: return LinComb.ONE
-        if other==1: return self
-        return self*pow(self, other-1)
+        """
+        Raises a LinComb to the power of an integer or a LinComb
+        Costs 0 constraints to raise to the power of an integer
+        Costs ? constraints to raise to the power of a LinComb
+        """
+        if mod != None:
+            raise ValueError("Cannot provide modulus")
+        if isinstance(other, int):
+            if other < 0:
+                raise ValueError("Exponent cannot be negative")
+            if other == 0:
+                return LinComb.ONE
+            if other == 1:
+                return self
+            return self * self ** (other - 1)
+
+        if isinstance(other, LinComb):
+            # Obliviously apply repeated squaring
+            from .branching import if_then_else
+
+            # Limit exponent to prevent Python crashing with bus error
+            if other.value.bit_length() > 5:
+                raise ValueError("Power too large")
+            other_bits = other.to_bits(bits=5)
+
+            # Compute all powers of value to hide true exponent
+            powers = [self]
+            curr = self
+            for i in range(len(other_bits)):
+                curr = curr ** 2
+                powers.append(curr)
+
+            # Obliviously pick only the powers we need
+            multiplicands = [if_then_else(bit == 1, power, LinComb.ONE) for (bit, power) in zip(other_bits, powers)]
+            
+            # Multiply the powers together
+            res = LinComb.ONE
+            for multiplicand in multiplicands:
+                res *= multiplicand
+            return res
+
+        return NotImplemented
     
     def __lshift__(self, other):
-        """ Left-shift with public value """
-        # TODO: extend to secret offset?
-        if not is_base_value(other): return NotImplemented
-        return self*(1<<other)
+        """
+        Shifts a LinComb bitwise to the left
+        Costs 0 constraints to shift by an integer number of bits
+        Costs ? constraints to raise to the power of a LinComb
+        """
+        if isinstance(other, int):
+            res = self * (1 << other)
+            if res is NotImplemented:
+                return NotImplemented
+            return res
+        if isinstance(other, LinComb):
+            res = self * (2 ** other)
+            if res is NotImplemented:
+                return NotImplemented
+            return res
+        return NotImplemented
     
     def __rshift__(self, other):
-        """ Right-shift with public value """
-        # TODO: extend to secret offset?
-        if not is_base_value(other): return NotImplemented
-        return LinComb.from_bits(self.to_bits[other:])
+        """
+        Shifts a LinComb bitwise to the right
+        Costs 0 constraints to shift by an integer number of bits
+        Costs ? constraints to raise to the power of a LinComb
+        """
+        if isinstance(other, int):
+            res = self // (1 << other)
+            if res is NotImplemented:
+                return NotImplemented
+            return res
+        if isinstance(other, LinComb):
+            res = self // (2 ** other)
+            if res is NotImplemented:
+                return NotImplemented
+            return res
+        return NotImplemented
     
     def _check_both_bits(self, other):
         if ignore_errors(): return
@@ -321,34 +427,31 @@ class LinComb:
         return self + other - self * other
 
     __radd__ = __add__
+    __rmul__ = __mul__
 
     def __rsub__(self, other):
-        return other+(-self)
-    
-    __rmul__ = __mul__
-    
-    def __rmatmul__(self, other): return NotImplemented
+        return other + (-self)
 
     def __rtruediv__(self, other):
-        """ Proper division by LinComb """
-        if not is_base_value(other): return NotImplemented
-        
-        if (is_guard()) and other % self.value == 0:
-            res = PrivVal(other/self.value)
-        elif ignore_errors():
-            res = PrivVal(0)
-        else:
-            raise ValueError(str(other.value) + " is not properly divisible by " + str(self.value))
-        
-        add_constraint(self, res, other*LinComb.ONE)
-        return res
-        
-    def __rfloordiv__(self, other): return NotImplemented
-    def __rmod__(self, other): return NotImplemented
-    def __rdivmod__(self, other): return NotImplemented
-    def __rpow__(self, other): return NotImplemented
-    def __rlshift__(self, other): return NotImplemented
-    def __rrshift__(self, other): return NotImplemented
+        return ConstVal(other).__truediv__(self)
+
+    def __rfloordiv__(self, other):
+        return ConstVal(other).__floordiv__(self)
+
+    def __rmod__(self, other):
+        return ConstVal(other).__mod__(self)
+
+    def __rdivmod__(self, other):
+        return ConstVal(other).__divmod__(self)
+
+    def __rpow__(self, other):
+        return ConstVal(other).__pow__(self)
+
+    def __rlshift__(self, other):
+        return ConstVal(other).__lshift__(self)
+
+    def __rrshift__(self, other):
+        return ConstVal(other).__rshift__(self)
 
     __rand__ = __and__
     __rxor__ = __xor__
@@ -372,6 +475,9 @@ class LinComb:
     def __int__(self): raise NotImplementedError("Should not run int() on LinComb")
     def __float__(self): return NotImplemented
     
+    def __matmul__(self, other): return NotImplemented
+    def __rmatmul__(self, other): return NotImplemented
+
     def __round__(self, ndigits=None): return NotImplemented
     def __trunc__(self): return NotImplemented
     def __floor__(self): return NotImplemented
@@ -389,9 +495,7 @@ class LinComb:
         
         add_constraint_unsafe(self, LinComb.ONE_SAFE-self, LinComb.ZERO)
         
-    def to_bits(self, bits=None):
-        if bits is None: bits=bitlength
-            
+    def to_bits(self, bits=bitlength):
         if (not ignore_errors()) and (self.value<0 or self.value.bit_length()>bits):
             raise ValueError("value " + str(self.value) + " is not a " + str(bits) + "-bit positive integer")
             
@@ -477,10 +581,29 @@ LinComb.ONE = LinComb(1, backend.one())
 LinComb.ONE_SAFE = LinComb.ONE
 
 def PubVal(val):
+    """
+    Create an instance variable
+    """
+    if not isinstance(val, int):
+        raise RuntimeError("Wrong type for PubVal")
     return LinComb(val, backend.pubval(val))
 
 def PrivVal(val):
+    """
+    Create a witness variable
+    """
+    if not isinstance(val, int):
+        raise RuntimeError("Wrong type for PrivVal")
     return LinComb(val, backend.privval(val))
+
+def ConstVal(val):
+    """
+    Creates a LinComb representing a constant without creating a witness or instance variable
+    Should be used carefully. Using LinCombs instead of integers where not needed will hurt performance
+    """
+    if not isinstance(val, int):
+        raise RuntimeError("Wrong type for ConstVal")
+    return LinComb(val, backend.one() * val)
 
 def for_each_in(converter, struct):
     """ Recursively traversing all lists and tuples in struct, apply f to each
