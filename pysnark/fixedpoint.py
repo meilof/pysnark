@@ -152,18 +152,18 @@ class LinCombFxp:
         """
         Divides a LinCombFxp with an integer, float, LinComb, or another LinCombFxp
         Costs 0 constraints to divide with an integer or a float
-        Costs 1 constraint to divide with a LinComb or LinCombFxp
+        Costs 2 * bitlength + 4 constraints to divide with a LinComb or LinCombFxp
         """
         if isinstance(other, int):
-            return LinCombFxp(self.lc / other, False)
+            return LinCombFxp(self.lc // other, False)
         if isinstance(other, float):
             other = LinCombFxp.add_scaling(other)
-            return LinCombFxp(self.lc * (1 << resolution) / other, False)
+            return LinCombFxp(self.lc * (1 << resolution) // other, False)
         if isinstance(other, LinComb):
             other = LinCombFxp.add_scaling(other)
-            return LinCombFxp(self.lc * (1 << resolution) / other, False)
+            return LinCombFxp(self.lc * (1 << resolution) // other, False)
         if isinstance(other, LinCombFxp):
-            return LinCombFxp(self.lc * (1 << resolution) / other.lc, False)
+            return LinCombFxp(self.lc * (1 << resolution) // other.lc, False)
         return NotImplemented
          
     def __floordiv__(self, other):

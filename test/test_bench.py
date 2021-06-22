@@ -133,7 +133,7 @@ class TestBench():
         assert assert_constant_constraints(lambda: PrivValFxp(0) + PrivVal(0)) == 0
         assert assert_constant_constraints(lambda: PrivValFxp(0) - PrivVal(0)) == 0
         assert assert_constant_constraints(lambda: PrivValFxp(0) * PrivVal(0)) == 1
-        assert assert_constant_constraints(lambda: PrivValFxp(1) / PrivVal(1)) == 1
+        assert assert_linear_constraints(lambda: PrivValFxp(1) / PrivVal(1)) == (2,4)
         assert assert_linear_constraints(lambda: PrivValFxp(1) // PrivVal(1)) == (2,4)
         assert assert_linear_constraints(lambda: PrivValFxp(1) % PrivVal(1)) == (2,4)
         # assert assert_constant_constraints(lambda: PrivValFxp(1) ** PrivVal(0)) == 41
