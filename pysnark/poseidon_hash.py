@@ -106,7 +106,7 @@ def poseidon_hash(inputs):
         raise RuntimeError("Can only hash lists of LinCombs")
 
     # Convert inputs to LinCombs
-    inputs = [x.lc for x in inputs if isinstance(x, LinCombFxp) or isinstance(x, LinCombBool)]
+    inputs = [x.lc if isinstance(x, LinCombFxp) or isinstance(x, LinCombBool) else x for x in inputs]
 
     # Pad inputs
     inputs_per_round = t - 1
