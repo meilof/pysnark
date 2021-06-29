@@ -53,8 +53,8 @@ class TestBench():
         assert assert_constant_constraints(lambda: PrivVal(0) - 0) == 0
         assert assert_constant_constraints(lambda: PrivVal(0) * 0) == 0
         assert assert_constant_constraints(lambda: PrivVal(1) / 1) == 0
-        assert assert_constant_constraints(lambda: PrivVal(1) // 1) == 0
-        assert assert_constant_constraints(lambda: PrivVal(1) % 1) == 0
+        assert assert_linear_constraints(lambda: PrivVal(1) // 1) == (2,4)
+        assert assert_linear_constraints(lambda: PrivVal(1) % 1) == (2,4)
         assert assert_constant_constraints(lambda: PrivVal(1) ** 5) == 4
 
         assert assert_constant_constraints(lambda: PrivVal(0) + PrivVal(0)) == 0
@@ -106,8 +106,8 @@ class TestBench():
 
         assert assert_constant_constraints(lambda: PrivVal(1) << 1) == 0
         assert assert_constant_constraints(lambda: PrivVal(1) << 2) == 0
-        assert assert_constant_constraints(lambda: PrivVal(1) >> 1) == 0
-        assert assert_constant_constraints(lambda: PrivVal(1) >> 2) == 0
+        assert assert_linear_constraints(lambda: PrivVal(1) >> 1) == (2,4)
+        assert assert_linear_constraints(lambda: PrivVal(1) >> 2) == (2,4)
         assert assert_constant_constraints(lambda: PrivVal(1) << PrivVal(1)) == 42
         assert assert_linear_constraints(lambda: PrivVal(1) >> PrivVal(1)) == (2,45)
 
@@ -125,9 +125,9 @@ class TestBench():
         assert assert_constant_constraints(lambda: PrivValFxp(0) + 0) == 0
         assert assert_constant_constraints(lambda: PrivValFxp(0) - 0) == 0
         assert assert_constant_constraints(lambda: PrivValFxp(0) * 0) == 0
-        assert assert_constant_constraints(lambda: PrivValFxp(1) / 1) == 0
-        assert assert_constant_constraints(lambda: PrivValFxp(1) // 1) == 0
-        assert assert_constant_constraints(lambda: PrivValFxp(1) % 1) == 0
+        assert assert_linear_constraints(lambda: PrivValFxp(1) / 1) == (2,4)
+        assert assert_linear_constraints(lambda: PrivValFxp(1) // 1) == (2,4)
+        assert assert_linear_constraints(lambda: PrivValFxp(1) % 1) == (2,4)
         assert assert_constant_constraints(lambda: PrivValFxp(1) ** 5) == 4
 
         assert assert_constant_constraints(lambda: PrivValFxp(0) + PrivVal(0)) == 0

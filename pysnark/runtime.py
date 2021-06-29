@@ -334,8 +334,7 @@ class LinComb:
     def __floordiv__(self, other):
         """
         Divides a LinComb with an integer or another LinComb using floor division
-        Costs 0 constraints to divide with an integer
-        Costs 1 constraint to divide with a LinComb
+        Costs 2 * bitlength + 4 constraints for floor division
         """
         res = self.__divmod__(other)
         if res is NotImplemented:
@@ -345,8 +344,7 @@ class LinComb:
     def __mod__(self, other):
         """
         Returns the remainder of a LinComb divided with an integer or another LinComb
-        Costs 0 constraints to divide modulo an integer
-        Costs 2 * bitlength + 4 constraints to divide modulo a LinComb
+        Costs 2 * bitlength + 4 constraints for modular division
         """
         res = self.__divmod__(other)
         if res is NotImplemented:
@@ -356,15 +354,10 @@ class LinComb:
     def __divmod__(self, divisor):
         """
         Divides a LinComb with an integer or another LinComb and returns the quotient and the remainder
-        Costs 0 constraints to divide with an integer
-        Costs 2 * bitlength + 4 constraints to divide with a LinComb
+        Costs 2 * bitlength + 4 constraints to divide
         """
         if isinstance(divisor, int):
-            if divisor == 0:
-                raise ValueError("Division by zero")
-            quo = PrivVal(self.value // divisor)
-            rem = PrivVal(self.value % divisor)
-            return (quo, rem)
+            divisor = ConstVal(divisor)
 
         if isinstance(divisor, LinComb):
             if divisor.value == 0:
@@ -451,7 +444,7 @@ class LinComb:
     def __rshift__(self, other):
         """
         Shifts a LinComb bitwise to the right
-        Costs 0 constraints to shift by an integer number of bits
+        Costs 2 * bitlength + 4 constraints to shift by an integer number of bits
         Costs 2 * bitlength + 45 constraints shift by a LinComb number of bits
         """
         if isinstance(other, int):

@@ -151,8 +151,7 @@ class LinCombFxp:
     def __truediv__(self, other):
         """
         Divides a LinCombFxp with an integer, float, LinComb, or another LinCombFxp
-        Costs 0 constraints to divide with an integer or a float
-        Costs 2 * bitlength + 4 constraints to divide with a LinComb or LinCombFxp
+        Costs 2 * bitlength + 4 constraints to divide
         """
         if isinstance(other, int):
             return LinCombFxp(self.lc // other, False)
@@ -169,8 +168,7 @@ class LinCombFxp:
     def __floordiv__(self, other):
         """
         Divides LinCombFxp by an integer, float, LinComb, or LinCombFxp using floor division
-        Costs 0 constraints to divide modulo an integer or float
-        Costs 2 * bitlength + 4 constraints to divide modulo a LinComb or LinCombFxp
+        Costs 2 * bitlength + 4 constraints for floor division
         """
         res = self.__divmod__(other)
         if res is NotImplemented:
@@ -180,8 +178,7 @@ class LinCombFxp:
     def __mod__(self, other):
         """
         Returns the remainder of a LinCombFxp divided with an integer, float, LinComb, or LinCombFxp 
-        Costs 0 constraints to divide modulo an integer or float
-        Costs 2 * bitlength + 4 constraints to divide modulo a LinComb or LinCombFxp
+        Costs 2 * bitlength + 4 constraints for modular division
         """
         res = self.__divmod__(other)
         if res is NotImplemented:
@@ -191,8 +188,7 @@ class LinCombFxp:
     def __divmod__(self, divisor):
         """
         Divides a LinCombFxp with an integer, float, LinComb, or LinCombFxp and returns the quotient and the remainder
-        Costs 0 constraints to divide with an integer or a float
-        Costs 2 * bitlength + 4 constraints to divide with a LinComb or a LinCombFxp
+        Costs 2 * bitlength + 4 constraints to divide
         """
         if isinstance(divisor, int) or isinstance(divisor, float) or isinstance(divisor, LinComb):
             divisor = LinCombFxp.add_scaling(divisor)
