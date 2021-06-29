@@ -362,8 +362,8 @@ class LinComb:
         if isinstance(divisor, int):
             if divisor == 0:
                 raise ValueError("Division by zero")
-            quo = ConstVal(self.value // divisor)
-            rem = ConstVal(self.value % divisor)
+            quo = PrivVal(self.value // divisor)
+            rem = PrivVal(self.value % divisor)
             return (quo, rem)
 
         if isinstance(divisor, LinComb):
