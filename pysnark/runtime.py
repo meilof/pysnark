@@ -314,7 +314,7 @@ class LinComb:
             if is_guard() and (self.value % other == 0):
                 return LinComb(self.value // other, self.lc * backend.fieldinverse(other))
             if ignore_errors():
-                return LinComb.ZERO
+                return LinComb(0, self.lc * backend.fieldinverse(other))
             raise ValueError(str(self.value) + " is not properly divisible by " + str(other))
 
         if isinstance(other, LinComb):
