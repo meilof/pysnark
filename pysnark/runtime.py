@@ -444,14 +444,13 @@ class LinComb:
     def __rshift__(self, other):
         """
         Shifts a LinComb bitwise to the right
-        Costs 2 * bitlength + 4 constraints to shift by an integer number of bits
+        Costs bitlength + 1 constraints to shift by an integer number of bits
         Costs 2 * bitlength + 45 constraints shift by a LinComb number of bits
         """
         if isinstance(other, int):
-            res = self // (1 << other)
-            if res is NotImplemented:
-                return NotImplemented
-            return res
+            bits = self.to_bits()
+            wanted_bits = bits[other:]
+            return LinComb.from_bits(wanted_bits)
         if isinstance(other, LinComb):
             res = self // (2 ** other)
             if res is NotImplemented:
