@@ -140,8 +140,7 @@ class LinCombFxp:
             other = LinCombFxp.add_scaling(other)
             return LinCombFxp((self.lc * other) / (1 << resolution), False)
         if isinstance(other, LinComb):
-            other = LinCombFxp.add_scaling(other)
-            return LinCombFxp((self.lc * other) / (1 << resolution), False)
+            return LinCombFxp(self.lc * other, False)
         if isinstance(other, LinCombFxp):
             return LinCombFxp((self.lc * other.lc) / (1 << resolution), False)
         return NotImplemented
