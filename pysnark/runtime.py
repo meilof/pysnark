@@ -698,7 +698,7 @@ class LinComb:
     def assert_range(self, rangemin, rangemax, err=None):
         """
         Ensures a LinComb is within the range [rangemin, rangemax]
-        Costs 2 * bitlength + 3 constraints
+        Costs 2 * bitlength + 2 constraints
         """
         rangemin = LinComb._ensurelc(rangemin)
         rangemax = LinComb._ensurelc(rangemax)
@@ -708,12 +708,8 @@ class LinComb:
                 raise AssertionError(err if err is not None else str(self.value) + " is not in the range [" + str(rangemin.value) + "," + str(rangemax.value) + ")")
 
         # Use bounds check gadget from Bulletproofs
-        a = self - rangemin
-        b = rangemax - self
-
-        (a + b).assert_eq(rangemax - rangemin, err)
-        a.assert_positive()
-        b.assert_positive()
+        (self - rangemin).assert_positive()
+        (rangemax - self).assert_positive()
 
     @classmethod
     def _ensurelc(cls, val):

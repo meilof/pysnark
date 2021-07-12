@@ -89,7 +89,7 @@ class TestBench():
         assert assert_constant_constraints(lambda: PrivVal(1).assert_nonzero()) == 1
 
         assert assert_linear_constraints(lambda: PrivVal(1).assert_positive()) == (1,1)
-        assert assert_linear_constraints(lambda: PrivVal(1).assert_range(PrivVal(0), PrivVal(2))) == (2, 3)
+        assert assert_linear_constraints(lambda: PrivVal(1).assert_range(PrivVal(0), PrivVal(2))) == (2, 2)
 
         assert assert_constant_constraints(lambda: PrivVal(0).assert_eq(PrivVal(0))) == 1
         assert assert_constant_constraints(lambda: PrivVal(0).assert_ne(PrivVal(1))) == 1
@@ -171,7 +171,7 @@ class TestBench():
         assert assert_constant_constraints(lambda: PrivValFxp(1).assert_nonzero()) == 1
 
         assert assert_linear_constraints(lambda: PrivValFxp(1).assert_positive()) == (1,1)
-        assert assert_linear_constraints(lambda: PrivValFxp(1).assert_range(PrivVal(0), PrivVal(2))) == (2, 3)
+        assert assert_linear_constraints(lambda: PrivValFxp(1).assert_range(PrivVal(0), PrivVal(2))) == (2, 2)
 
         assert assert_constant_constraints(lambda: PrivValFxp(0).assert_eq(PrivVal(0))) == 1
         assert assert_constant_constraints(lambda: PrivValFxp(0).assert_ne(PrivVal(1))) == 1
