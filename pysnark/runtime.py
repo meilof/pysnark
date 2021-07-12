@@ -662,14 +662,7 @@ class LinComb:
         """
         from pysnark.boolean import LinCombBool
 
-        ret = PrivVal(1 if self.value != 0 else 0)
-        wit = PrivVal(backend.fieldinverse(self.value + (self.value == 0)))  # Add self.value == 0 to prevent ZeroDivisionError
-
-        # Use nonzero check gadget from Bulletproofs
-        add_constraint_unsafe(self, 1 - ret, LinComb.ZERO)
-        add_constraint_unsafe(self, wit, ret)
-
-        return LinCombBool(ret)
+        return ~self.check_zero()
     
     def assert_zero(self, err=None):
         """
