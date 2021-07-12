@@ -132,10 +132,11 @@ class LinCombBool:
         Costs 0 constraints to AND with a constant
         Costs 1 constraint to AND with a LinComb
         """
-        if isinstance(other, int):
-            return LinCombBool(self.lc * other, False)
-        other = LinCombBool._ensurebool(other)
-        return LinCombBool(self.lc * other.lc, False)
+        if isinstance(other, LinComb) or isinstance(other, LinCombBool):
+            other = LinCombBool._ensurebool(other)
+            return LinCombBool(self.lc * other.lc, False)
+        other = 1 if other else 0
+        return LinCombBool(self.lc * other, False)
 
     def __xor__(self, other):
         """
@@ -143,10 +144,11 @@ class LinCombBool:
         Costs 0 constraints to XOR with a constant
         Costs 1 constraint to XOR with a LinComb
         """
-        if isinstance(other, int):
-            return LinCombBool(self + other - 2 * self * other, False)
-        other = LinCombBool._ensurebool(other)
-        return LinCombBool(self.lc + other.lc - 2 * self.lc * other.lc, False)
+        if isinstance(other, LinComb) or isinstance(other, LinCombBool):
+            other = LinCombBool._ensurebool(other)
+            return LinCombBool(self.lc + other.lc - 2 * self.lc * other.lc, False)
+        other = 1 if other else 0
+        return LinCombBool(self + other - 2 * self * other, False)
 
     def __or__(self, other):
         """
@@ -154,10 +156,11 @@ class LinCombBool:
         Costs 0 constraints to OR with a constant
         Costs 1 constraint to OR with a LinComb
         """
-        if isinstance(other, int):
-            return LinCombBool(self.lc * other, False)
-        other = LinCombBool._ensurebool(other)
-        return LinCombBool(self.lc + other.lc - self.lc * other.lc, False)
+        if isinstance(other, LinComb) or isinstance(other, LinCombBool):
+            other = LinCombBool._ensurebool(other)
+            return LinCombBool(self.lc + other.lc - self.lc * other.lc, False)
+        other = 1 if other else 0
+        return LinCombBool(self.lc + other - self.lc * other, False)
 
     def __eq__(self, other): return self.lc == self._ensurebool(other).lc
     def __ne__(self, other): return self.lc != self._ensurebool(other).lc
