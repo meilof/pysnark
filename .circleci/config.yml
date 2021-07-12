@@ -1,0 +1,129 @@
+# Circle CI configuration file
+# https://circleci.com/docs/
+
+version: 2.1
+
+commands:
+  pip-install:
+    description: Upgrade pip
+    steps:
+      - run:
+          name: Upgrade pip
+          command: |
+            python -m pip install --upgrade --user pip
+            python -m pip install --upgrade --user wheel
+            python -m pip install --upgrade --user setuptools
+
+  install-dependencies:
+    steps:
+      - run:
+          name: Install dependencies
+          command: |
+            pip3 install pytest
+            pip3 install flatbuffers
+
+  run-test:
+    steps:
+      - run:
+          name: Run test
+          command: |
+            echo 'export PYTHONPATH=$PWD/src' >> $BASH_ENV
+            pytest
+
+  setup-nobackend:
+    steps:
+      - run:
+          name: Set nobackend backend
+          command: |
+            echo 'export PYSNARK_BACKEND=nobackend' >> $BASH_ENV
+
+  setup-libsnark:
+    steps:
+      - run:
+          name: Set libsnark backend
+          command: |
+            pip3 install python-libsnark
+            echo 'export PYSNARK_BACKEND=libsnark' >> $BASH_ENV
+
+  setup-zkinterface:
+    steps:
+      - run:
+          name: Set zkinterface backend
+          command: |
+            echo 'export PYSNARK_BACKEND=zkinterface' >> $BASH_ENV
+
+  setup-qaptools:
+    steps:
+      - run:
+          name: Set qaptools backend
+          command: |
+            echo 'export PYSNARK_BACKEND=qaptools' >> $BASH_ENV
+
+  setup-snarkjs:
+    steps:
+      - run:
+          name: Set snarkjs backend
+          command: |
+            npm install snarkjs
+            echo 'export PYSNARK_BACKEND=snarkjs' >> $BASH_ENV
+
+jobs:
+  test-nobackend:
+    docker:
+      - image: cimg/python:3.7
+    steps:
+      - checkout
+      - pip-install
+      - install-dependencies
+      - setup-nobackend
+      - run-test
+
+  test-libsnark:
+    docker:
+      - image: cimg/python:3.7
+    steps:
+      - checkout
+      - pip-install
+      - install-dependencies
+      - setup-libsnark
+      - run-test
+
+  test-zkinterface:
+    docker:
+      - image: cimg/python:3.7
+    steps:
+      - checkout
+      - pip-install
+      - install-dependencies
+      - setup-zkinterface
+      - run-test
+
+  test-qaptools:
+    docker:
+      - image: cimg/python:3.7
+    steps:
+      - checkout
+      - pip-install
+      - install-dependencies
+      - setup-qaptools
+      - run-test
+
+  test-snarkjs:
+    docker:
+      - image: cimg/python:3.7-node
+    steps:
+      - checkout
+      - pip-install
+      - install-dependencies
+      - setup-snarkjs
+      - run-test
+
+workflows:
+  version: 2
+  build:
+    jobs:
+      - test-nobackend
+      - test-libsnark
+      - test-zkinterface
+      - test-qaptools
+      - test-snarkjs

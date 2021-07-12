@@ -39,3 +39,5 @@ examples/cubeint.py
 pysnark_ek
 pysnark_log
 pysnark_vk
+computation.zkif
+circuit.zkif
