@@ -366,10 +366,6 @@ class LinComb:
             res = quo * divisor
             rem = PrivVal(self.value - res.value)
 
-            # TODO: Prevent field overflow by a malicious prover
-            # Add a constraint ensuring quo * divisor + rem < backend.get_modulus()
-            # The check above works over the integers, but not in a finite field
-
             add_constraint(quo, divisor, self - rem)
             rem.assert_lt(divisor)
             quo.assert_positive()
