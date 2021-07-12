@@ -48,18 +48,42 @@ class TestLinCombBool():
         assert (~PubValBool(1)).val() == 0
 
     def test_and(self):
+        assert (PubValBool(0) & 0).val() == 0
+        assert (PubValBool(0) & 1).val() == 0
+        assert (PubValBool(1) & 0).val() == 0
+        assert (PubValBool(1) & 1).val() == 1
+
+        assert (PubValBool(1) & 2).val() == 1
+        assert (PubValBool(1) & True).val() == 1
+
         assert (PubValBool(0) & PubValBool(0)).val() == 0
         assert (PubValBool(0) & PubValBool(1)).val() == 0
         assert (PubValBool(1) & PubValBool(0)).val() == 0
         assert (PubValBool(1) & PubValBool(1)).val() == 1
 
     def test_or(self):
+        assert (PubValBool(0) | 0).val() == 0
+        assert (PubValBool(0) | 1).val() == 1
+        assert (PubValBool(1) | 0).val() == 1
+        assert (PubValBool(1) | 1).val() == 1
+
+        assert (PubValBool(1) | 2).val() == 1
+        assert (PubValBool(1) | True).val() == 1
+
         assert (PubValBool(0) | PubValBool(0)).val() == 0
         assert (PubValBool(0) | PubValBool(1)).val() == 1
         assert (PubValBool(1) | PubValBool(0)).val() == 1
         assert (PubValBool(1) | PubValBool(1)).val() == 1
 
     def test_xor(self):
+        assert (PubValBool(0) ^ 0).val() == 0
+        assert (PubValBool(0) ^ 1).val() == 1
+        assert (PubValBool(1) ^ 0).val() == 1
+        assert (PubValBool(1) ^ 1).val() == 0
+
+        assert (PubValBool(1) ^ 2).val() == 0
+        assert (PubValBool(1) ^ True).val() == 0
+
         assert (PubValBool(0) ^ PubValBool(0)).val() == 0
         assert (PubValBool(0) ^ PubValBool(1)).val() == 1
         assert (PubValBool(1) ^ PubValBool(0)).val() == 1
