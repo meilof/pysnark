@@ -63,8 +63,8 @@ class TestBench():
         assert assert_constant_constraints(lambda: PrivVal(1) / PrivVal(1)) == 1
         assert assert_linear_constraints(lambda: PrivVal(1) // PrivVal(1)) == (2,4)
         assert assert_linear_constraints(lambda: PrivVal(1) % PrivVal(1)) == (2,4)
-        assert assert_constant_constraints(lambda: PrivVal(1) ** PrivVal(0)) == 36
-        assert assert_constant_constraints(lambda: PrivVal(1) ** PrivVal(1)) == 36
+        assert assert_linear_constraints(lambda: PrivVal(1) ** PrivVal(0)) == (7,1)
+        assert assert_linear_constraints(lambda: PrivVal(1) ** PrivVal(1)) == (7,1)
 
     def test_lincomb_comparison(self):
         assert assert_constant_constraints(lambda: PrivVal(0) == 0) == 2
@@ -108,8 +108,8 @@ class TestBench():
         assert assert_constant_constraints(lambda: PrivVal(1) << 2) == 0
         assert assert_linear_constraints(lambda: PrivVal(1) >> 1) == (1,1)
         assert assert_linear_constraints(lambda: PrivVal(1) >> 2) == (1,1)
-        assert assert_constant_constraints(lambda: PrivVal(1) << PrivVal(1)) == 37
-        assert assert_linear_constraints(lambda: PrivVal(1) >> PrivVal(1)) == (2,40)
+        assert assert_linear_constraints(lambda: PrivVal(1) << PrivVal(1)) == (7,2)
+        assert assert_linear_constraints(lambda: PrivVal(1) >> PrivVal(1)) == (9,5)
 
         assert assert_constant_constraints(lambda: PrivVal(0) & 1) == 0
         assert assert_constant_constraints(lambda: PrivVal(0) | 1) == 0
@@ -136,8 +136,8 @@ class TestBench():
         assert assert_linear_constraints(lambda: PrivValFxp(1) / PrivVal(1)) == (2,4)
         assert assert_linear_constraints(lambda: PrivValFxp(1) // PrivVal(1)) == (2,4)
         assert assert_linear_constraints(lambda: PrivValFxp(1) % PrivVal(1)) == (2,4)
-        # assert assert_constant_constraints(lambda: PrivValFxp(1) ** PrivVal(0)) == 41
-        # assert assert_constant_constraints(lambda: PrivValFxp(1) ** PrivVal(1)) == 41
+        # assert assert_linear_constraints(lambda: PrivValFxp(1) ** PrivVal(0)) == 41
+        # assert assert_linear_constraints(lambda: PrivValFxp(1) ** PrivVal(1)) == 41
 
         assert assert_constant_constraints(lambda: PrivValFxp(0) + PrivValFxp(0)) == 0
         assert assert_constant_constraints(lambda: PrivValFxp(0) - PrivValFxp(0)) == 0
@@ -145,8 +145,8 @@ class TestBench():
         assert assert_linear_constraints(lambda: PrivValFxp(1) / PrivValFxp(1)) == (2,4)
         assert assert_linear_constraints(lambda: PrivValFxp(1) // PrivValFxp(1)) == (2,4)
         assert assert_linear_constraints(lambda: PrivValFxp(1) % PrivValFxp(1)) == (2,4)
-        # assert assert_constant_constraints(lambda: PrivValFxp(1) ** PrivValFxp(0)) == 41
-        # assert assert_constant_constraints(lambda: PrivValFxp(1) ** PrivValFxp(1)) == 41
+        # assert assert_linear_constraints(lambda: PrivValFxp(1) ** PrivValFxp(0)) == 41
+        # assert assert_linear_constraints(lambda: PrivValFxp(1) ** PrivValFxp(1)) == 41
 
     def test_lincombfxp_comparison(self):
         assert assert_constant_constraints(lambda: PrivValFxp(0) == 0) == 2

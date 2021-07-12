@@ -30,7 +30,7 @@
 
 import warnings
 import pysnark.runtime
-from pysnark.runtime import LinComb, PrivVal, PubVal, ConstVal
+from pysnark.runtime import LinComb, PrivVal, PubVal, ConstVal, backend
 from pysnark.boolean import LinCombBool
 
 """
@@ -240,12 +240,21 @@ class LinCombFxp:
         Costs n-1 constraints to raise to the power n
         The exponent n must be <= 31 to prevent Python crashing
         """
-        if mod!=None: raise ValueError("cannot provide modulus")
-        if not isinstance(other, int): return NotImplemented
-        if other<0: raise ValueError("exponent cannot be negative", other)
-        if other==0: return LinCombFxp(LinComb.ONE)
-        if other==1: return self
-        return self * self ** (other - 1)
+        if mod != None:
+            raise ValueError("cannot provide modulus")
+        if not isinstance(other, int):
+            return NotImplemented
+        if other < 0:
+            raise ValueError("exponent cannot be negative", other)
+        if other == 0:
+            return LinCombFxp(LinComb.ONE)
+        if other == 1:
+            return self
+        
+        res = self * self ** (other - 1)
+        res.lc.value %= backend.get_modulus()
+
+        return res
     
     def __lshift__(self, other): return LinCombFxp(self.lc<<other, False)
 

@@ -381,8 +381,7 @@ class LinComb:
         """
         Raises a LinComb to the power of an integer or a LinComb
         Costs n constraints to raise to an integer power n
-        Costs 36 constraints to raise to the power of a LinComb,
-        The exponent n must be <= 31 to prevent Python crashing
+        Costs 7 * bitlength + 1 constraints to raise to the power of a LinComb
         """
         if mod != None:
             raise ValueError("Cannot provide modulus")
@@ -399,16 +398,14 @@ class LinComb:
             # Obliviously apply repeated squaring
             from .branching import if_then_else
 
-            # Limit exponent to prevent Python crashing with bus error
-            if other.value.bit_length() > 5:
-                raise ValueError("Power too large")
-            other_bits = other.to_bits(bits=5)
+            other_bits = other.to_bits()
 
             # Compute all powers of value to hide true exponent
             powers = [self]
             curr = self
             for i in range(len(other_bits)):
                 curr = curr ** 2
+                curr.value %= backend.get_modulus()
                 powers.append(curr)
 
             # Obliviously pick only the powers we need
@@ -418,6 +415,7 @@ class LinComb:
             res = LinComb.ONE
             for multiplicand in multiplicands:
                 res *= multiplicand
+                res.value %= backend.get_modulus()
             return res
 
         return NotImplemented
@@ -426,8 +424,8 @@ class LinComb:
         """
         Shifts a LinComb bitwise to the left
         Costs 0 constraints to shift by an integer number of bits
-        Costs 37 constraints to shift by a LinComb number of bits,
-        given 36 operations to raise a LinComb to the power of a LinComb
+        Costs n + 1 constraints to shift by a LinComb number of bits,
+        given n operations to raise a LinComb to the power of a LinComb
         """
         if isinstance(other, int):
             res = self * (1 << other)
@@ -445,7 +443,7 @@ class LinComb:
         """
         Shifts a LinComb bitwise to the right
         Costs bitlength + 1 constraints to shift by an integer number of bits
-        Costs 2 * bitlength + 40 constraints shift by a LinComb number of bits
+        Costs 9 * bitlength + 5 constraints shift by a LinComb number of bits
         """
         if isinstance(other, int):
             bits = self.to_bits()
