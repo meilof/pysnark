@@ -128,7 +128,7 @@ class TestBench():
         assert assert_linear_constraints(lambda: PrivValFxp(1) / 1) == (2,4)
         assert assert_linear_constraints(lambda: PrivValFxp(1) // 1) == (2,4)
         assert assert_linear_constraints(lambda: PrivValFxp(1) % 1) == (2,4)
-        assert assert_constant_constraints(lambda: PrivValFxp(1) ** 5) == 4
+        assert assert_linear_constraints(lambda: PrivValFxp(1) ** 5) == (8,20)
 
         assert assert_constant_constraints(lambda: PrivValFxp(0) + PrivVal(0)) == 0
         assert assert_constant_constraints(lambda: PrivValFxp(0) - PrivVal(0)) == 0
@@ -141,7 +141,7 @@ class TestBench():
 
         assert assert_constant_constraints(lambda: PrivValFxp(0) + PrivValFxp(0)) == 0
         assert assert_constant_constraints(lambda: PrivValFxp(0) - PrivValFxp(0)) == 0
-        assert assert_constant_constraints(lambda: PrivValFxp(0) * PrivValFxp(0)) == 1
+        assert assert_linear_constraints(lambda: PrivValFxp(0) * PrivValFxp(0)) == (2,5)
         assert assert_linear_constraints(lambda: PrivValFxp(1) / PrivValFxp(1)) == (2,4)
         assert assert_linear_constraints(lambda: PrivValFxp(1) // PrivValFxp(1)) == (2,4)
         assert assert_linear_constraints(lambda: PrivValFxp(1) % PrivValFxp(1)) == (2,4)

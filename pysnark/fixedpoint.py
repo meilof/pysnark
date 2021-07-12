@@ -132,17 +132,18 @@ class LinCombFxp:
         """
         Multiplies a LinCombFxp with an integer, float, LinComb, or another LinCombFxp
         Costs 0 constraints to multiply with an integer or a float
-        Costs 1 constraint to multiply with a LinComb or LinCombFxp
+        Costs 1 constraint to multiply with a LinComb
+        Costs 2 * bitlength + 5 constraint to multiply with a LinCombFxp
         """
         if isinstance(other, int):
             return LinCombFxp(self.lc * other, False)
         if isinstance(other, float):
             other = LinCombFxp.add_scaling(other)
-            return LinCombFxp((self.lc * other) / (1 << resolution), False)
+            return LinCombFxp((self.lc * other) // (1 << resolution), False)
         if isinstance(other, LinComb):
             return LinCombFxp(self.lc * other, False)
         if isinstance(other, LinCombFxp):
-            return LinCombFxp((self.lc * other.lc) / (1 << resolution), False)
+            return LinCombFxp((self.lc * other.lc) // (1 << resolution), False)
         return NotImplemented
 
     __rmul__ = __mul__
@@ -237,8 +238,7 @@ class LinCombFxp:
     def __pow__(self, other, mod=None):
         """
         Raises a LinCombFxp to the power of an integer
-        Costs n-1 constraints to raise to the power n
-        The exponent n must be <= 31 to prevent Python crashing
+        Costs 8 * bitlength + 20 constraints to take an exponent
         """
         if mod != None:
             raise ValueError("cannot provide modulus")
