@@ -181,9 +181,9 @@ class LinCombBool:
         """
         Raises a LinCombBool to the power of an integer, LinComb, or LinCombBool
         Returns a LinComb
-        Costs 36 constraints
+        Costs 3 constraints
         """
-        return self.lc.__pow__(other, mod)
+        return self.lc != 0
     
     def __lshift__(self, other):
         return NotImplemented

@@ -197,4 +197,4 @@ class TestBench():
         assert assert_constant_constraints(lambda: val + PrivVal(2)) == 0
         assert assert_constant_constraints(lambda: val - PrivVal(2)) == 0
         assert assert_constant_constraints(lambda: val * PrivVal(2)) == 1
-        assert assert_constant_constraints(lambda: val ** PrivVal(2)) == 41
+        assert assert_constant_constraints(lambda: val ** PrivVal(2)) == 3
