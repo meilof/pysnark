@@ -381,7 +381,7 @@ class LinComb:
         """
         Raises a LinComb to the power of an integer or a LinComb
         Costs n constraints to raise to an integer power n
-        Costs 41 constraints to raise to the power of a LinComb,
+        Costs 36 constraints to raise to the power of a LinComb,
         The exponent n must be <= 31 to prevent Python crashing
         """
         if mod != None:
@@ -426,8 +426,8 @@ class LinComb:
         """
         Shifts a LinComb bitwise to the left
         Costs 0 constraints to shift by an integer number of bits
-        Costs 42 constraints to shift by a LinComb number of bits,
-        given 41 operations to raise a LinComb to the power of a LinComb
+        Costs 37 constraints to shift by a LinComb number of bits,
+        given 36 operations to raise a LinComb to the power of a LinComb
         """
         if isinstance(other, int):
             res = self * (1 << other)
@@ -445,7 +445,7 @@ class LinComb:
         """
         Shifts a LinComb bitwise to the right
         Costs bitlength + 1 constraints to shift by an integer number of bits
-        Costs 2 * bitlength + 45 constraints shift by a LinComb number of bits
+        Costs 2 * bitlength + 40 constraints shift by a LinComb number of bits
         """
         if isinstance(other, int):
             bits = self.to_bits()
@@ -641,7 +641,7 @@ class LinComb:
     def check_zero(self):
         """
         Checks whether a LinComb is zero
-        Costs 3 constraints
+        Costs 2 constraints
         """
         from pysnark.boolean import LinCombBool
 
@@ -653,12 +653,12 @@ class LinComb:
         add_constraint_unsafe(self, wit, LinComb.ONE_SAFE - ret)
         add_constraint_unsafe(self, ret, LinComb.ZERO)
 
-        return LinCombBool(ret)
+        return LinCombBool(ret, False)
 
     def check_nonzero(self):
         """
         Checks whether a LinComb is nonzero
-        Costs 3 constraints
+        Costs 2 constraints
         """
         from pysnark.boolean import LinCombBool
 

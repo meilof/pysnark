@@ -181,7 +181,7 @@ class LinCombBool:
         """
         Raises a LinCombBool to the power of an integer, LinComb, or LinCombBool
         Returns a LinComb
-        Costs 3 constraints
+        Costs 2 constraints
         """
         return self.lc != 0
     
