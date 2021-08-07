@@ -1,10 +1,11 @@
-# Copytight (C) Meilof Veeningen, 2019
+# Copyright (C) Meilof Veeningen, 2019
 
 import importlib
 import os
 import sys
 
 backend = None
+backend_name = None
 
 backends = [
     ["libsnark",    "pysnark.libsnark.backend"],
@@ -19,25 +20,29 @@ backends = [
 
 for mod in backends:
     if mod[1] in sys.modules:
+        backend_name = mod[0]
         backend = sys.modules[mod[1]]
         break
 
 if backend is None and "PYSNARK_BACKEND" in os.environ:
-        for mod in backends:
-            if os.environ["PYSNARK_BACKEND"]==mod[0]:
-                backend=importlib.import_module(mod[1])
-        if backend is None:
-            print("*** PySNARK: unknown backend in environment variables: " + os.environ["PYSNARK_BACKEND"])
+    for mod in backends:
+        if os.environ["PYSNARK_BACKEND"]==mod[0]:
+            backend_name = mod[0]
+            backend = importlib.import_module(mod[1])
+    if backend is None:
+        print("*** PySNARK: unknown backend in environment variables: " + os.environ["PYSNARK_BACKEND"])
 
 if backend is None:
     try:
         get_ipython()
         import pysnark.nobackend
-        backend=pysnark.nobackend
+        backend_name = "nobackend"
+        backend = pysnark.nobackend
     except:
         for mod in backends:
             try:
-                backend=importlib.import_module(mod[1])
+                backend_name = mod[0]
+                backend = importlib.import_module(mod[1])
                 break
             except Exception as e:
                 print("*** Error loading backend " + str(mod[1]) + ":", e)
@@ -152,8 +157,11 @@ def if_guard(fn):
 
 igprint = if_guard(print)
 
-""" Add constraint v*w=y to the constraint system, and update running computation hash. """
 def add_constraint(v,w,y,check=True):
+    """
+    Add the constraint v * w = y to the constraint system
+    Updates running computation hash
+    """
     if not guard is None:
         dummy = PrivVal(v.value*w.value-y.value)
         add_constraint_unsafe(v,w,y+dummy)
@@ -161,7 +169,7 @@ def add_constraint(v,w,y,check=True):
     else:
         if v.value*w.value!=y.value:
             # note that we do the check over the integers
-            if check and not ignore_errors(): raise ValueError("constraint did not hold")
+            if check and not ignore_errors(): raise AssertionError("constraint did not hold")
             
         add_constraint_unsafe(v,w,y)
 
@@ -172,7 +180,7 @@ class LinComb:
         
     def val(self):
         """ Creates a SNARK output for the current output and return its value """
-        (self-PubVal(self.value)).assert_zero()     
+        (self-PubVal(self.value)).assert_zero()
         return self.value
     
     def __repr__(self):
@@ -182,173 +190,339 @@ class LinComb:
         return self
     
     # self<other, so other-self>0, so other-self-1>=0
-    def __lt__(self, other): return (other-self-1).check_positive()
-    def assert_lt(self, other, err=None): (other-self-1).assert_positive(err)
+    def __lt__(self, other):
+        return (other-self-1).check_positive()
+    
+    def assert_lt(self, other, err=None):
+        other = LinComb._ensurelc(other)
+
+        if not ignore_errors():
+            if self.value >= other.value:
+                raise AssertionError(err if err is not None else str(self.value) + " is not less than " + str(other.value))
+
+        (other-self-1).assert_positive(err=err)
         
     # self<=other, so other-self>=0
-    def __le__(self, other): return (other-self).check_positive()
-    def assert_le(self, other, err=None): (other-self).assert_positive(err)
+    def __le__(self, other):
+        return (other-self).check_positive()
+
+    def assert_le(self, other, err=None):
+        other = LinComb._ensurelc(other)
+
+        if not ignore_errors():
+            if self.value > other.value:
+                raise AssertionError(err if err is not None else str(self.value) + " is not less than or equal to " + str(other.value))
+
+        (other-self).assert_positive(err=err)
     
-    def __eq__(self, other): return (self-other).check_zero()
-    def assert_eq(self, other, err=None): (self-other).assert_zero(err)
+    def __eq__(self, other):
+        return (self-other).check_zero()
+
+    def assert_eq(self, other, err=None):
+        other = LinComb._ensurelc(other)
+
+        if not ignore_errors():
+            if self.value != other.value:
+                raise AssertionError(err if err is not None else str(self.value) + " is not equal to " + str(other.value))
+
+        (self-other).assert_zero(err=err)
         
-    def __ne__(self, other): return 1-(self==other)
-    def assert_ne(self, other, err=None): (self-other).assert_nonzero(err)
+    def __ne__(self, other):
+        return (self-other).check_nonzero()
+
+    def assert_ne(self, other, err=None):
+        other = LinComb._ensurelc(other)
+
+        if not ignore_errors():
+            if self.value == other.value:
+                raise AssertionError(err if err is not None else str(self.value) + " is equal to " + str(other.value))
+
+        (self-other).assert_nonzero(err=err)
         
     # self>other, so self-other>0, so self-other-1>=0
-    def __gt__(self, other): return (self-other-1).check_positive()
-    def assert_gt(self, other, err=None): (self-other-1).assert_positive(err)
-        
+    def __gt__(self, other):
+        return (self-other-1).check_positive()
+
+    def assert_gt(self, other, err=None):
+        other = LinComb._ensurelc(other)
+
+        if not ignore_errors():
+            if self.value <= other.value:
+                raise AssertionError(err if err is not None else str(self.value) + " is not greater than " + str(other.value))
+
+        (self-other-1).assert_positive(err=err)
+
     # self>=other, so self-other>=0
-    def __ge__(self, other): return (self-other).check_positive()
-    def assert_ge(self, other, err=None): (self-other).assert_positive(err)
+    def __ge__(self, other):
+        return (self-other).check_positive()
+
+    def assert_ge(self, other, err=None):
+        other = LinComb._ensurelc(other)
+
+        if not ignore_errors():
+            if self.value < other.value:
+                raise AssertionError(err if err is not None else str(self.value) + " is not greater than or equal to " + str(other.value))
+
+        (self-other).assert_positive(err=err)
         
     def __bool__(self):
-        raise NotImplementedError("Should not run bool() on a LinComb")
-        
+        raise NotImplementedError("Cannot call __bool__ on a LinComb. \
+            Instead of if statements, use if_then_else from pysnark.branching")
+
     def __add__(self, other):
+        """
+        Adds a LinComb with an integer or another LinComb
+        Costs 0 constraints
+        """
+        if isinstance(other, int):
+            return self + ConstVal(other)
         if isinstance(other, LinComb):
-            return LinComb(self.value+other.value, self.lc+other.lc)
-        elif is_base_value(other):
-            return self + other*LinComb.ONE
-        else:
-            return NotImplemented
-        
-    def __sub__(self, other):
-        return self+(-other)
+            return LinComb(self.value + other.value, self.lc + other.lc)
+        return NotImplemented
     
+    def __sub__(self, other):
+        """
+        Subtracts an integer or another LinComb from a LinComb
+        Costs 0 constraints
+        """
+        return self + (-other)
+
     def __mul__(self, other):
+        """
+        Multiplies a LinComb with an integer or another LinComb
+        Costs 0 constraints to multiply with an integer
+        Costs 1 constraint to multiply with a LinComb
+        """
+        if isinstance(other, int):
+            return LinComb(self.value * other, self.lc * other)
         if isinstance(other, LinComb):
-            retval = PrivVal(self.value*other.value)
+            retval = PrivVal(self.value * other.value)
             add_constraint_unsafe(self, other, retval)
             return retval
-        elif is_base_value(other):
-            return LinComb(self.value*other, self.lc*other)
-        else:
-            return NotImplemented
-                    
-    def __matmul__(self, other): return NotImplemented
-    
+        return NotImplemented
+
     def __truediv__(self, other): 
-        """ Proper division """
+        """
+        Divides a LinComb with an integer or another LinComb using integer division
+        Throws ValueError if values are not evenly divisible
+        Costs 0 constraints to divide with an integer
+        Costs 1 constraint to divide with a LinComb
+        """
+        if isinstance(other, int):
+            if other == 0:
+                raise ValueError("Division by zero")
+            if is_guard() and (self.value % other == 0):
+                return LinComb(self.value // other, self.lc * backend.fieldinverse(other))
+            if ignore_errors():
+                return LinComb(0, self.lc * backend.fieldinverse(other))
+            raise ValueError(str(self.value) + " is not properly divisible by " + str(other))
+
         if isinstance(other, LinComb):
-            if (is_guard()) and self.value % other.value == 0:
-                res = PrivVal(self.value/other.value)
+            if other.value == 0:
+                raise ValueError("Division by zero")
+            elif is_guard() and (self.value % other.value == 0):
+                res = PrivVal(self.value // other.value)
             elif ignore_errors():
                 res = PrivVal(0)
             else:
                 raise ValueError(str(self.value) + " is not properly divisible by " + str(other.value))
             add_constraint(other, res, self)
             return res
-        elif is_base_value(other):
-            if self.value % other != 0:
-                raise ValueError(str(self.value) + " is not properly divisible by " + str(other))
-            return LinComb(self.value/other, self.lc*backend.fieldinverse(other))
-        else:
-            return NotImplemented
+
+        return NotImplemented
          
     def __floordiv__(self, other):
-        """ Division with rounding """
-        return self.__divmod__(other)[0]
+        """
+        Divides a LinComb with an integer or another LinComb using floor division
+        Costs 2 * bitlength + 4 constraints for floor division
+        """
+        res = self.__divmod__(other)
+        if res is NotImplemented:
+            return NotImplemented
+        return res[0]
 
     def __mod__(self, other):
-        if other&(other-1)==0:
-            # this is faster for powers of two
-            return LinComb.from_bits(self.to_bits()[:other.bit_length()-1])
-        
-        return self.__divmod__(other)[1]
+        """
+        Returns the remainder of a LinComb divided with an integer or another LinComb
+        Costs 2 * bitlength + 4 constraints for modular division
+        """
+        res = self.__divmod__(other)
+        if res is NotImplemented:
+            return NotImplemented
+        return res[1]
         
     def __divmod__(self, divisor):
-        """ Division by public value """
-        
-        if not is_base_value(divisor): return NotImplemented
-        
-        if divisor==0: raise ValueError("division by zero")
-        
-        quo = PrivVal(self.value//divisor)
-        rem = PrivVal(self.value-quo.value*divisor)
- 
-        rem.assert_positive(divisor.bit_length())
-        if divisor&(divisor-1)!=0: rem.assert_lt(divisor) # not needed for powers of two
-        quo.assert_positive()
-        (self-divisor*quo-rem).assert_zero()
-        
-        return (quo,rem)
+        """
+        Divides a LinComb with an integer or another LinComb and returns the quotient and the remainder
+        Costs 2 * bitlength + 4 constraints to divide
+        """
+        if isinstance(divisor, int):
+            divisor = ConstVal(divisor)
+
+        if isinstance(divisor, LinComb):
+            if divisor.value == 0:
+                raise ValueError("Division by zero")
+            quo = PrivVal(self.value // divisor.value)
+            res = quo * divisor
+            rem = PrivVal(self.value - res.value)
+
+            add_constraint(quo, divisor, self - rem)
+            rem.assert_lt(divisor)
+            quo.assert_positive()
+            return (quo,rem)
+
+        return NotImplemented
     
     def __pow__(self, other, mod=None):
-        """ Exponentiation with public integral power p>=0 """
-        if mod!=None: raise ValueError("cannot provide modulus")
-        if not is_base_value(other): return NotImplemented
-        if other<0: raise ValueError("exponent cannot be negative", other)
-        if other==0: return LinComb.ONE
-        if other==1: return self
-        return self*pow(self, other-1)
+        """
+        Raises a LinComb to the power of an integer or a LinComb
+        Costs n constraints to raise to an integer power n
+        Costs 7 * bitlength + 1 constraints to raise to the power of a LinComb
+        """
+        if mod != None:
+            raise ValueError("Cannot provide modulus")
+        if isinstance(other, int):
+            if other < 0:
+                raise ValueError("Exponent cannot be negative")
+            if other == 0:
+                return LinComb.ONE
+            if other == 1:
+                return self
+            return self * self ** (other - 1)
+
+        if isinstance(other, LinComb):
+            # Obliviously apply repeated squaring
+            from .branching import if_then_else
+
+            other_bits = other.to_bits()
+
+            # Compute all powers of value to hide true exponent
+            powers = [self]
+            curr = self
+            for i in range(len(other_bits)):
+                curr = curr ** 2
+                curr.value %= backend.get_modulus()
+                powers.append(curr)
+
+            # Obliviously pick only the powers we need
+            multiplicands = [if_then_else(bit == 1, power, LinComb.ONE) for (bit, power) in zip(other_bits, powers)]
+            
+            # Multiply the powers together
+            res = LinComb.ONE
+            for multiplicand in multiplicands:
+                res *= multiplicand
+                res.value %= backend.get_modulus()
+            return res
+
+        return NotImplemented
     
     def __lshift__(self, other):
-        """ Left-shift with public value """
-        # TODO: extend to secret offset?
-        if not is_base_value(other): return NotImplemented
-        return self*(1<<other)
+        """
+        Shifts a LinComb bitwise to the left
+        Costs 0 constraints to shift by an integer number of bits
+        Costs n + 1 constraints to shift by a LinComb number of bits,
+        given n operations to raise a LinComb to the power of a LinComb
+        """
+        if isinstance(other, int):
+            res = self * (1 << other)
+            if res is NotImplemented:
+                return NotImplemented
+            return res
+        if isinstance(other, LinComb):
+            res = self * (2 ** other)
+            if res is NotImplemented:
+                return NotImplemented
+            return res
+        return NotImplemented
     
     def __rshift__(self, other):
-        """ Right-shift with public value """
-        # TODO: extend to secret offset?
-        if not is_base_value(other): return NotImplemented
-        return LinComb.from_bits(self.to_bits[other:])
-    
-    def _check_both_bits(self, other):
-        if ignore_errors(): return
-        
-        if self.value !=0 and self.value!=1: raise ValueError("not a bit: " + str(self.value))
-            
-        if isinstance(other, LinComb) and (other.value==0 or other.value==1): return
-        if is_base_value(other) and (other==0 or other==1): return
-        raise ValueError("not a bit: " + str(other))
+        """
+        Shifts a LinComb bitwise to the right
+        Costs bitlength + 1 constraints to shift by an integer number of bits
+        Costs 9 * bitlength + 5 constraints shift by a LinComb number of bits
+        """
+        if isinstance(other, int):
+            bits = self.to_bits()
+            wanted_bits = bits[other:]
+            return LinComb.from_bits(wanted_bits)
+        if isinstance(other, LinComb):
+            res = self // (2 ** other)
+            if res is NotImplemented:
+                return NotImplemented
+            return res
+        return NotImplemented
     
     def __and__(self, other):
-        """ Bitwise and &. Cost: 1 constraint """
-        self._check_both_bits(other)
-        return self * other
+        """
+        Computes the bitwise and of a LinComb with an integer or a LinComb
+        Costs 0 operations to and with an integer
+        Costs 3 * bitlength + 3 operations to and with a LinComb 
+        """
+        if isinstance(other, int):
+            return PrivVal(self.value & other)
+        if isinstance(other, LinComb):
+            self_bits = self.to_bits()
+            other_bits = other.to_bits()
+            res = [x * y for (x,y) in zip(self_bits, other_bits)]
+            return LinComb.from_bits(res)
+        return NotImplemented
 
     def __xor__(self, other):
-        """Bitwise exclusive-or ^. Cost: 1 constraint """
-        self._check_both_bits(other)
-        return self + other - 2 * self * other
+        """
+        Computes the bitwise xor of a LinComb with an integer or a LinComb
+        Costs 0 operations to xor with an integer
+        Costs 3 * bitlength + 3 operations to xor with a LinComb
+        """
+        if isinstance(other, int):
+            return PrivVal(self.value ^ other)
+        if isinstance(other, LinComb):
+            self_bits = self.to_bits()
+            other_bits = other.to_bits()
+            res = [x + y - 2 * x * y for (x,y) in zip(self_bits, other_bits)]
+            return LinComb.from_bits(res)
+        return NotImplemented
 
     def __or__(self, other):
-        """Bitwise or |. Cost: 1 constraint """
-        self._check_both_bits(other)
-        return self + other - self * other
+        """
+        Computes the bitwise or of a LinComb with an integer or a LinComb
+        Costs 0 operations to or with an integer
+        Costs 3 * bitlength + 3 operations to or with a LinComb
+        """
+        if isinstance(other, int):
+            return PrivVal(self.value | other)
+        if isinstance(other, LinComb):
+            self_bits = self.to_bits()
+            other_bits = other.to_bits()
+            res = [x + y - x * y for (x,y) in zip(self_bits, other_bits)]
+            return LinComb.from_bits(res)
+        return NotImplemented
 
     __radd__ = __add__
+    __rmul__ = __mul__
 
     def __rsub__(self, other):
-        return other+(-self)
-    
-    __rmul__ = __mul__
-    
-    def __rmatmul__(self, other): return NotImplemented
+        return other + (-self)
 
     def __rtruediv__(self, other):
-        """ Proper division by LinComb """
-        if not is_base_value(other): return NotImplemented
-        
-        if (is_guard()) and other % self.value == 0:
-            res = PrivVal(other/self.value)
-        elif ignore_errors():
-            res = PrivVal(0)
-        else:
-            raise ValueError(str(other.value) + " is not properly divisible by " + str(self.value))
-        
-        add_constraint(self, res, other*LinComb.ONE)
-        return res
-        
-    def __rfloordiv__(self, other): return NotImplemented
-    def __rmod__(self, other): return NotImplemented
-    def __rdivmod__(self, other): return NotImplemented
-    def __rpow__(self, other): return NotImplemented
-    def __rlshift__(self, other): return NotImplemented
-    def __rrshift__(self, other): return NotImplemented
+        return ConstVal(other).__truediv__(self)
+
+    def __rfloordiv__(self, other):
+        return ConstVal(other).__floordiv__(self)
+
+    def __rmod__(self, other):
+        return ConstVal(other).__mod__(self)
+
+    def __rdivmod__(self, other):
+        return ConstVal(other).__divmod__(self)
+
+    def __rpow__(self, other):
+        return ConstVal(other).__pow__(self)
+
+    def __rlshift__(self, other):
+        return ConstVal(other).__lshift__(self)
+
+    def __rrshift__(self, other):
+        return ConstVal(other).__rshift__(self)
 
     __rand__ = __and__
     __rxor__ = __xor__
@@ -365,122 +539,201 @@ class LinComb:
         return if_then_else(self>=0, self, -self)
 
     def __invert__(self):
-        # we do not want to do ~1=0 and ~0=1 since this is also not true for native ints
-        raise NotImplementedError("Operator ~ not supported. For binary not, use 1-x")
+        inverted_bits = [~x for x in self.to_bits()]
+        return LinComb.from_bits(inverted_bits)
         
     def __complex__(self): return NotImplemented
     def __int__(self): raise NotImplementedError("Should not run int() on LinComb")
     def __float__(self): return NotImplemented
     
+    def __matmul__(self, other): return NotImplemented
+    def __rmatmul__(self, other): return NotImplemented
+
     def __round__(self, ndigits=None): return NotImplemented
     def __trunc__(self): return NotImplemented
     def __floor__(self): return NotImplemented
     def __ceil__(self): return NotImplemented
 
-    def assert_bool(self, err=None):
-        if (not ignore_errors()) and (self.value!=0 and self.value!=1):
-            raise ValueError(err if err is not None else "expected bool, got " + str(self.value))
-        
-        add_constraint(self, 1-self, LinComb.ZERO)
-
-    def assert_bool_unsafe(self, err=None):
-        if (not ignore_errors()) and (self.value!=0 and self.value!=1):
-            raise ValueError(err if err is not None else "expected bool, got " + str(self.value))
-        
-        add_constraint_unsafe(self, LinComb.ONE_SAFE-self, LinComb.ZERO)
-        
     def to_bits(self, bits=None):
-        if bits is None: bits=bitlength
-            
-        if (not ignore_errors()) and (self.value<0 or self.value.bit_length()>bits):
-            raise ValueError("value " + str(self.value) + " is not a " + str(bits) + "-bit positive integer")
-            
-        bits = [PrivVal((self.value&(1<<ix))>>ix) for ix in range(bits)]
-        for bit in bits: bit.assert_bool_unsafe()
-            
-        (self-LinComb.from_bits(bits)).assert_zero()
+        """
+        Splits an integer LinComb into an bitlength-length array of LinCombBool bits
+        Raises AssertionError if LinComb cannot be represented with bitlength bits
+        Costs bitlength + 1 constraints to split a LinComb into bits
+        """
+        from pysnark.boolean import PrivValBool
+        
+        if bits is None:
+            bits = bitlength
+
+        if not ignore_errors():
+            if self.value < 0 or self.value.bit_length() > bits:
+                raise AssertionError(str(self.value) + " is not a " + str(bits) + "-bit positive integer")
+
+        # Construct bits
+        bits = [PrivValBool((self.value & (1 << ix)) >> ix) for ix in range(bits)]
+        
+        # Check that bits are equal to self
+        (self - LinComb.from_bits(bits)).assert_zero()
         
         return bits
         
     @classmethod
     def from_bits(cls, bits):
-        return sum([biti*(1<<i) for (i,biti) in enumerate(bits)])
-        
+        """
+        Constructs an integer LinComb out of an array of LinCombBool bits
+        Costs 0 constraints to construct a LinComb from bits
+        """
+        return sum([biti * (1 << i) for (i,biti) in enumerate(bits)])
+
     """
     Given a value in [-1<<bitlength,1>>bitlength], check if it is positive.
     Note that this works on (bitlength+1)-length values so it works for
     __lt__, etc on bitlength-length values
     """
     def check_positive(self, bits=None):
-        if bits is None: bits=bitlength
-            
-        if (is_guard()) and self.value.bit_length()<=bits:
-            ret = PrivVal(1 if self.value>=0 else 0)
-            abs = self.value if self.value>=0 else -self.value
-            bits = [PrivVal((abs&(1<<ix))>>ix) for ix in range(bits)]
+        """
+        Checks if a LinComb is a positive bitlength-bit integer
+        Costs bitlength + 2 constraints
+        """
+        from pysnark.boolean import PrivValBool
+
+        if bits is None:
+            bits = bitlength
+
+        if is_guard() and self.value.bit_length() <= bits:
+            ret = PrivValBool(1 if self.value >= 0 else 0)
+            abs = self.value if self.value >= 0 else -self.value
+
+            bits = [PrivValBool((abs & (1 << ix)) >> ix) for ix in range(bits)]
         elif ignore_errors():
-            ret = PrivVal(0)
-            bits = [PrivVal(0) for _ in range(bits)]
+            ret = PrivValBool(0)
+            bits = [PrivValBool(0) for _ in range(bits)]
         else:
-            raise ValueError("value " + str(self.value) + " is not a " + str(bits) + "-bit integer")
-            
-        for bit in bits: bit.assert_bool_unsafe()
+            raise ValueError(str(self.value) + " is not a " + str(bits) + "-bit integer")
         
-        # if ret==1, then requires that 2*self=self+sum, so sum=self
-        # if ret==0, this requires that 0=self+sum, so sum=-self
-        add_constraint(2*ret, self, self+LinComb.from_bits(bits))
+        # If ret == 1, then requires that 2 * self = self + sum, so sum = self
+        # If ret == 0, this requires that 0 = self + sum, so sum = -self
+        add_constraint(2 * ret, self, self + LinComb.from_bits(bits))
         
         return ret
             
     def assert_positive(self, bits=None, err=None):
-        if bits is None: bits=bitlength
-            
-        if (not ignore_errors()) and (self.value<0 or self.value.bit_length()>bits):
-            raise ValueError(err if err is not None else "value " + str(self.value) + " is not a " + str(bits) + "-bit positive integer")
+        """
+        Ensures a LinComb is a positive bitlength-bit integer
+        Costs bitlength + 1 constraints
+        """
 
-        self.to_bits(bits)
+        if bits is None:
+            bits = bitlength
+
+        if not ignore_errors():
+            if self.value < 0 or self.value.bit_length() > bits:
+                raise AssertionError(err if err is not None else str(self.value) + " is not a " + str(bits) + "-bit positive integer")
+
+        self.to_bits()
         
     def check_zero(self):
-        ret = PrivVal(1 if self.value==0 else 0)
-        
-        wit = PrivVal(backend.fieldinverse(self.value+ret.value))  # add ret.value so always nonzero
+        """
+        Checks whether a LinComb is zero
+        Costs 2 constraints
+        """
+        from pysnark.boolean import LinCombBool
+
+        ret = PrivVal(1 if self.value == 0 else 0)
+        wit = PrivVal(backend.fieldinverse(self.value + (self.value == 0))) # Add self.value == 0 to prevent ZeroDivisionError
         
         # Trick from Pinocchio paper: if self is zero then ret=1 by first eq,
         # if self is nonzero then ret=0 by second eq
-        add_constraint_unsafe(self, wit, LinComb.ONE_SAFE-ret)
+        add_constraint_unsafe(self, wit, LinComb.ONE_SAFE - ret)
         add_constraint_unsafe(self, ret, LinComb.ZERO)
-        
-        return ret
+
+        return LinCombBool(ret, False)
+
+    def check_nonzero(self):
+        """
+        Checks whether a LinComb is nonzero
+        Costs 2 constraints
+        """
+        from pysnark.boolean import LinCombBool
+
+        return ~self.check_zero()
     
     def assert_zero(self, err=None):
+        """
+        Ensures a LinComb is zero
+        Costs 1 constraint
+        """
         if (not ignore_errors()) and self.value!=0:
-            raise ValueError(err if err is not None else "value " + str(self.value) + " is not zero")
+            raise AssertionError(err if err is not None else str(self.value) + " is not zero")
             
-        add_constraint(LinComb.ZERO, LinComb.ZERO, self)        
+        add_constraint(LinComb.ZERO, LinComb.ZERO, self)
             
     def assert_nonzero(self, err=None):
+        """
+        Ensures a LinComb is nonzero
+        Costs 1 constraint
+        """
         if (is_guard()) and self.value!=0:
             wit = PrivVal(backend.fieldinverse(self.value))    
         elif ignore_errors():
             wit = PrivVal(0)
         else:
-            raise ValueError(err if err is not None else "value " + str(self.value) + " is not zero")
+            raise AssertionError(err if err is not None else str(self.value) + " is zero")
         
         add_constraint(self, wit, LinComb.ONE, check=False)
-        
-    def if_else(self, ifval, elseval):
-        from .branching import if_then_else
-        return if_then_else(self, ifval, elseval)
-    
+
+    def assert_range(self, rangemin, rangemax, err=None):
+        """
+        Ensures a LinComb is within the range [rangemin, rangemax]
+        Costs 2 * bitlength + 2 constraints
+        """
+        rangemin = LinComb._ensurelc(rangemin)
+        rangemax = LinComb._ensurelc(rangemax)
+
+        if not ignore_errors():
+            if self.value < rangemin.value or self.value >= rangemax.value:
+                raise AssertionError(err if err is not None else str(self.value) + " is not in the range [" + str(rangemin.value) + "," + str(rangemax.value) + ")")
+
+        # Use bounds check gadget from Bulletproofs
+        (self - rangemin).assert_positive()
+        (rangemax - self).assert_positive()
+
+    @classmethod
+    def _ensurelc(cls, val):
+        if isinstance(val, LinComb):
+            return val
+        if isinstance(val, int):
+            return LinComb.ONE * val
+        raise RuntimeError("Wrong type for LinComb")
+
 LinComb.ZERO = LinComb(0, backend.zero())
 LinComb.ONE = LinComb(1, backend.one())
 LinComb.ONE_SAFE = LinComb.ONE
 
 def PubVal(val):
+    """
+    Create an instance variable
+    """
+    if not isinstance(val, int):
+        raise RuntimeError("Wrong type for PubVal")
     return LinComb(val, backend.pubval(val))
 
 def PrivVal(val):
+    """
+    Create a witness variable
+    """
+    if not isinstance(val, int):
+        raise RuntimeError("Wrong type for PrivVal")
     return LinComb(val, backend.privval(val))
+
+def ConstVal(val):
+    """
+    Creates a LinComb representing a constant without creating a witness or instance variable
+    Should be used carefully. Using LinCombs instead of integers where not needed will hurt performance
+    """
+    if not isinstance(val, int):
+        raise RuntimeError("Wrong type for ConstVal")
+    return LinComb(val, backend.one() * val)
 
 def for_each_in(converter, struct):
     """ Recursively traversing all lists and tuples in struct, apply f to each
@@ -495,171 +748,6 @@ def for_each_in(converter, struct):
         return converter(struct)
 
 """
-Support for fixed-point computations
-"""
-
-class LinCombFxp:
-    """
-    Variable representing a fixed-point number. Number x is represented as integer
-    :math:`x * 2^r`, where r is the resolution :py:data:`VarFxp.res`
-    """
-    
-    res = 8
-
-    def __init__(self, lc):
-        if not isinstance(lc, LinComb): raise RuntimeError("wrong type for LinCombFxp")
-        self.lc = lc
-
-    @classmethod
-    def fromvar(cls, var, doconvert):
-        if not isinstance(var, LinComb): raise RuntimeError("wrong type for fromvar")
-        if doconvert:
-            return cls(var*(1<<LinCombFxp.res))
-        else:
-            return cls(var)
-    
-    @classmethod
-    def tofloat(self, val):
-        return float(val)/(1<<LinCombFxp.res)
-    
-    def val(self):
-        return LinCombFxp.tofloat(self.lc.val())
-
-    def __repr__(self):
-        return "{"+str(LinCombFxp.tofloat(self.lc.value))+"}"
-    
-    @classmethod
-    def _ensurefxp(cls, val):
-        if isinstance(val,LinCombFxp):
-            return val
-        elif isinstance(val,LinComb):
-            return cls.fromvar(val, True)
-        else:
-            v = _tofxpval(val, True)
-            return cls(LinComb.ONE*v)
-    
-    def __add__(self, other):
-        other = self._ensurefxp(other)
-        return LinCombFxp(self.lc+other.lc)
-        
-    __radd__ = __add__
-    
-    def __sub__(self, other):
-        return self+(-other)
-    
-    def __rsub__(self, other):
-        return other+(-self)    
-
-    def __mul__(self, other):
-        if is_base_value(other):
-            return LinCombFxp(self.lc*other)
-        
-        other = self._ensurefxp(other)
-        if other is NotImplemented: return NotImplemented
-        
-        ret = LinCombFxp(PrivVal((self.lc.value*other.lc.value+(1<<(LinCombFxp.res-1)))>>LinCombFxp.res))
-            
-        # mul error: should be in [-2^f,2^f]
-        diff = (1<<LinCombFxp.res)*ret.lc-self.lc*other.lc
-        (diff + (1<<LinCombFxp.res)).assert_positive(LinCombFxp.res+1)
-        ((1<<LinCombFxp.res) - diff).assert_positive(LinCombFxp.res+1)
-
-        return ret        
-    
-    __rmul__ = __mul__
-    
-    def __truediv__(self, other): 
-        other = self._ensurefxp(other)
-        if other is NotImplemented: return NotImplemented
-
-        ret = LinCombFxp(PrivVal(int(float(self.lc.value)*(1<<LinCombFxp.res)/float(other.lc.value)+0.5)))
-
-        # division error: should be in [-other,other]
-        df=self.lc*(1<<LinCombFxp.res)-ret.lc*other.lc
-        (other.lc-df).assert_positive()
-        (other.lc+df).assert_positive()
-        
-        return ret
-         
-    def __floordiv__(self, other):
-        return NotImplemented
-
-    def __mod__(self, other):
-        return NotImplemented
-        
-    def __divmod__(self, divisor):
-        return NotImplemented
-
-    def __rtruediv__(self, other):
-        return NotImplemented
-
-    def __neg__(self):
-        return LinCombFxp(-self.lc)
-    
-    def __lt__(self, other): return self.lc < self._ensurefxp(other).lc
-    def __le__(self, other): return self.lc <= self._ensurefxp(other).lc
-    def __eq__(self, other): return self.lc == self._ensurefxp(other).lc
-    def __ne__(self, other): return self.lc != self._ensurefxp(other).lc
-    def __gt__(self, other): return self.lc > self._ensurefxp(other).lc
-    def __ge__(self, other): return self.lc >= self._ensurefxp(other).lc
-    
-    def assert_lt(self, other, err=None): self.lc.assert_lt(self._ensurefxp(other).lc)
-    def assert_le(self, other, err=None): self.lc.assert_le(self._ensurefxp(other).lc)
-    def assert_eq(self, other, err=None): self.lc.assert_eq(self._ensurefxp(other).lc)
-    def assert_ne(self, other, err=None): self.lc.assert_ne(self._ensurefxp(other).lc)
-    def assert_gt(self, other, err=None): self.lc.assert_gt(self._ensurefxp(other).lc)
-    def assert_ge(self, other, err=None): self.lc.assert_ge(self._ensurefxp(other).lc)
-        
-    def __bool__(self): return bool(self.lc)
-        
-    def __pow__(self, other, mod=None):
-        """ Exponentiation with public integral power p>=0 """
-        if mod!=None: raise ValueError("cannot provide modulus")
-        if not is_base_value(other): return NotImplemented
-        if other<0: raise ValueError("exponent cannot be negative", other)
-        if other==0: return LinCombFxp.fromvar(LinComb.ONE, True)
-        if other==1: return self
-        return self*pow(self, other-1)
-    
-    def __lshift__(self, other): return LinCombFxp(self.lc<<other)
-    def __rshift__(self, other): return LinCombFxp(self.lc>>other)
-        
-    def __pos__(self):
-        return self
-    
-    def __abs__(self):
-        from .branching import if_then_else
-        return if_then_else(self>=0, self, -self)
-
-    def __int__(self): raise NotImplementedError("Should not run int() on LinComb")
-        
-    def check_positive(self, *args, **kwargs): return self.lc.check_positive(*args, **kwargs)
-    def assert_positive(self, *args, **kwargs): self.lc.assert_positive(*args, **kwargs)
-    def check_zero(self): return self.lc.check_zero()
-    def assert_zero(self, *args, **kwargs): self.lc.assert_zero(*args, **kwargs)
-    def assert_nonzero(self, *args, **kwargs): self.lc.assert_nonzero(*args, **kwargs)
-        
-    def __if_then_else__(self, other, cond):
-        falsev = self._ensurefxp(other).lc
-        return LinCombFxp(falsev+(self.lc-falsev)*cond)
-        
-def _tofxpval(val, doconvert):
-    if isinstance(val, float):
-        return int(val*(1<<LinCombFxp.res)+0.5)
-    elif doconvert:
-        return val*(1<<LinCombFxp.res)
-    else:
-        return val
-        
-def PubValFxp(val, doconvert=True):
-    val = _tofxpval(val, doconvert)
-    return LinCombFxp(PubVal(val))
-
-def PrivValFxp(val, doconvert=True):
-    val = _tofxpval(val, doconvert)
-    return LinCombFxp(PrivVal(val))
-
-"""
 Turns the given function into a SNARK. Input and outputs to the function are
 converted to public SNARK inputs (via PubVal). Input/output conversion is also
 performed over lists and tuples, but not over more complex objects.
@@ -671,13 +759,18 @@ Can be used as a decorator, e.g.,
 """
 def snark(fn):
     def snark__(*args, **kwargs):
+        from pysnark.fixedpoint import PubValFxp, LinCombFxp
+        from pysnark.boolean import PubValBool, LinCombBool
+
         if kwargs: raise ValueError("@snark-decorated functions cannot have keyword arguments")
 
         argscopy = for_each_in(lambda x: PubVal(x) if isinstance(x,int) else x, args)
         argscopy = for_each_in(lambda x: PubValFxp(x) if isinstance(x,float) else x, argscopy)
+        argscopy = for_each_in(lambda x: PubValBool(x) if isinstance(x,bool) else x, argscopy)
         ret = fn(*argscopy, **kwargs)
         retcopy = for_each_in(lambda x: x.val() if isinstance(x,LinComb) else x, ret)
         retcopy = for_each_in(lambda x: x.val() if isinstance(x,LinCombFxp) else x, retcopy)
+        retcopy = for_each_in(lambda x: x.val() if isinstance(x,LinCombBool) else x, retcopy)
 
         return retcopy
         

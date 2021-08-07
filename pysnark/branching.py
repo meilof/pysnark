@@ -5,28 +5,31 @@ import inspect
 
 import pysnark.runtime
 
-from .runtime import guarded, is_base_value, PubVal, PrivVal, ignore_errors, is_base_value, LinComb, add_guard, restore_guard
-    
-def if_then_else(cond, truev, falsev):
-    if truev is falsev: return truev
-    
-    if is_base_value(cond):
-        if cond!=0 and cond!=1: 
-            raise ValueError("not a boolean value: " + str(cond))
-        return truev if cond else falsev
-    elif (not ignore_errors()) and cond.value!=0 and cond.value!=1:
-        raise(ValueError("not a bit: " + str(cond)))
-    else:
-        if callable(truev): truev = guarded(cond)(truev)()
-        if callable(falsev): falsev = guarded(1-cond)(falsev)()        
- 
-        if isinstance(truev, list):
-            return [if_then_else(cond, truevi, falsevi) for (truevi,falsevi) in zip(truev,falsev)]
-        elif is_base_value(truev) or isinstance(truev, LinComb):
-            return falsev+cond*(truev-falsev)
-        else:
-            return truev.__if_then_else__(falsev, cond)
+from pysnark.runtime import guarded, is_base_value, PubVal, PrivVal, ignore_errors, is_base_value, LinComb, add_guard, restore_guard
+from pysnark.boolean import LinCombBool
+from pysnark.fixedpoint import LinCombFxp
 
+def if_then_else(cond, truev, falsev):
+    if truev is falsev:
+        return truev
+    
+    if isinstance(cond, int):
+        if cond != 0 and cond != 1:
+            raise ValueError("if_then_else can only take Boolean values")
+        return truev if cond else falsev
+
+    if not isinstance(cond, LinCombBool):
+        raise RuntimeError("Wrong type for if_then_else condition")
+
+    if callable(truev): truev = guarded(cond)(truev)()
+    if callable(falsev): falsev = guarded(-cond)(falsev)()        
+
+    if isinstance(truev, list):
+        return [if_then_else(cond, truevi, falsevi) for (truevi,falsevi) in zip(truev,falsev)]
+    
+    if isinstance(truev, LinCombFxp):
+        falsev = LinCombFxp._ensurefxp(falsev)
+    return falsev + cond * (truev - falsev)
 
 class BranchingValues:
     def __init__(self):

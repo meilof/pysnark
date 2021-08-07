@@ -20,7 +20,7 @@ def fieldinverse(val):
     return 0
 
 def get_modulus():
-    return 1
+    return 10000
 
 def add_constraint(v, w, y):
     pass
