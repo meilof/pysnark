@@ -408,5 +408,9 @@ and finally, run ``truffle test --network development``.
 
 ## Acknowledgements
 
-Part of this work on this software was carried out as part of the [SODA](https://www.soda-project.eu/) project that has received funding from the European Union’s Horizon 2020 research and innovation programme under grant agreement No 731583.
+This software contains contributions by Koninklijke Philips N.V.. Part of this work on this software was carried out as part of the [SODA](https://www.soda-project.eu/) project that has received funding from the European Union’s Horizon 2020 research and innovation programme under grant agreement No 731583.
+
+This software also contains contributions by Meilof Veeningen and Glenn Xavier.
+
+See the [license](https://github.com/meilof/pysnark/blob/master/LICENSE.md) for more information.
 
