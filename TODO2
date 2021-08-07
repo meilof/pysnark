@@ -1,0 +1,4 @@
+* some of the LinCombBool operations can be implemented more efficiently
+  since we know that it stores bits, e.g., a<=b <=> not(a=1 and b=0)
+* implement __pow__ using square-and-multiply
+* runtime __mod__, __floordiv__ with a power of two can be more efficient
