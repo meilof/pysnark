@@ -14,6 +14,32 @@ commands:
             python -m pip install --upgrade --user wheel
             python -m pip install --upgrade --user setuptools
 
+  install-cmake:
+    steps:
+      - run:
+          name: Install cmake
+          command: |
+            sudo apt-get update -y
+            sudo apt-get update
+            sudo apt-get install cmake
+
+  install-qaptools:
+    steps:
+      - run:
+          name: Install qaptools
+          command: |
+            cd ..
+            git clone git@github.com:Charterhouse/qaptools.git
+            cd qaptools
+            git submodule init
+            git submodule update
+            mkdir build
+            cd build
+            cmake ..
+            make
+            echo 'export PATH=$PATH:~/qaptools/build/' >> $BASH_ENV
+            cd ../../
+
   install-dependencies:
     steps:
       - run:
@@ -27,7 +53,6 @@ commands:
       - run:
           name: Run test
           command: |
-            echo 'export PYTHONPATH=$PWD/src' >> $BASH_ENV
             pytest
 
   setup-nobackend:
@@ -105,6 +130,8 @@ jobs:
       - checkout
       - pip-install
       - install-dependencies
+      - install-cmake
+      - install-qaptools
       - setup-qaptools
       - run-test
 
