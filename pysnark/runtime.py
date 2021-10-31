@@ -777,9 +777,13 @@ def snark(fn):
     return snark__
 
 autoprove = True
+operation = None
+namevals = {}
 
 def final():
     if autoprove: backend.prove()
+    else :
+        if backend.process_snark: backend.process_snark(operation,namevals)
 
 import atexit
 from .atexitmaybe import maybe
