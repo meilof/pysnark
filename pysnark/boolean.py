@@ -212,7 +212,7 @@ class LinCombBool:
     def assert_nonzero(self): self.lc.assert_nonzero()
     
     def if_else(self, ifval, elseval):
-        return ifval + self*(elseval-ifval)
+        return elseval + self*(ifval-elseval)
         
 def PubValBool(val):
     if not isinstance(val, int) and not isinstance(val, bool):
