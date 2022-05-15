@@ -707,7 +707,7 @@ class LinComb:
         raise RuntimeError("Wrong type for LinComb")
         
     def if_else(self, ifval, elseval):
-        return ifval + self*(elseval-ifval)        
+        return elseval + self*(ifval-elseval)        
 
 LinComb.ZERO = LinComb(0, backend.zero())
 LinComb.ONE = LinComb(1, backend.one())
