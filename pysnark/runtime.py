@@ -705,6 +705,9 @@ class LinComb:
         if isinstance(val, int):
             return LinComb.ONE * val
         raise RuntimeError("Wrong type for LinComb")
+        
+    def if_else(self, ifval, elseval):
+        return ifval + self*(elseval-ifval)        
 
 LinComb.ZERO = LinComb(0, backend.zero())
 LinComb.ONE = LinComb(1, backend.one())

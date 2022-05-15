@@ -137,6 +137,8 @@ class LinCombBool:
             return LinCombBool(self.lc * other.lc, False)
         other = 1 if other else 0
         return LinCombBool(self.lc * other, False)
+        
+    __rand__ = __and__
 
     def __xor__(self, other):
         """
@@ -208,6 +210,9 @@ class LinCombBool:
     def check_zero(self): return self.lc.check_zero()
     def assert_zero(self): self.lc.assert_zero()
     def assert_nonzero(self): self.lc.assert_nonzero()
+    
+    def if_else(self, ifval, elseval):
+        return ifval + self*(elseval-ifval)
         
 def PubValBool(val):
     if not isinstance(val, int) and not isinstance(val, bool):
