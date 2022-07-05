@@ -368,7 +368,7 @@ class LinComb:
 
             add_constraint(quo, divisor, self - rem)
             rem.assert_lt(divisor)
-            quo.assert_positive()
+            rem.assert_positive()
             return (quo,rem)
 
         return NotImplemented
