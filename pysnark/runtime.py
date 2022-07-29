@@ -614,6 +614,10 @@ class LinComb:
         # If ret == 1, then requires that 2 * self = self + sum, so sum = self
         # If ret == 0, this requires that 0 = self + sum, so sum = -self
         add_constraint(2 * ret, self, self + LinComb.from_bits(bits))
+
+        # We need an additional constraint for ensuring self == 0 => ret = 1
+        w = PrivVal(1 if self.value == 0 else (1 - ret.value)/self.value)
+        add_constraint(self, w, 1 - ret)
         
         return ret
             
