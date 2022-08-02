@@ -616,8 +616,8 @@ class LinComb:
         add_constraint(2 * ret, self, self + LinComb.from_bits(bits))
 
         # We need an additional constraint for ensuring self == 0 => ret = 1
-        w = PrivVal(1 if self.value == 0 else (1 - ret.value)/self.value)
-        add_constraint(self, w, 1 - ret)
+        w = PrivVal(1 if self.value == 0 else (1 - ret.lc.value) * backend.fieldinverse(self.value))
+        add_constraint_unsafe(self, w, 1 - ret)
         
         return ret
             
