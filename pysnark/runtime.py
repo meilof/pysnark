@@ -602,7 +602,7 @@ class LinComb:
 
         if is_guard() and self.value.bit_length() <= bits:
             ret = PrivValBool(1 if self.value >= 0 else 0)
-            abs = self.value if self.value >= 0 else -self.value
+            abs = self.value if self.value >= 0 else -self.value - 1
 
             bits = [PrivValBool((abs & (1 << ix)) >> ix) for ix in range(bits)]
         elif ignore_errors():
@@ -613,12 +613,7 @@ class LinComb:
         
         # If ret == 1, then requires that 2 * self = self + sum, so sum = self
         # If ret == 0, this requires that 0 = self + sum, so sum = -self
-        add_constraint(2 * ret, self, self + LinComb.from_bits(bits))
-
-        # We need an additional constraint for ensuring self == 0 => ret = 1
-        w = PrivVal(1 if self.value == 0 else (1 - ret.lc.value) * backend.fieldinverse(self.value))
-        add_constraint_unsafe(self, w, 1 - ret)
-        
+        add_constraint(2 * ret, self, self + LinComb.from_bits(bits) + (1-ret))
         return ret
             
     def assert_positive(self, bits=None, err=None):
