@@ -15,7 +15,9 @@ backends = [
     ["zkinterface", "pysnark.zkinterface.backend"],
     ["zkifbellman", "pysnark.zkinterface.backendbellman"],
     ["zkifbulletproofs", "pysnark.zkinterface.backendbulletproofs"],	
-    ["nobackend",   "pysnark.nobackend"]
+    ["nobackend",   "pysnark.nobackend"],
+    ["sigmaprover", "pysnark.sigma.prover"],
+    ["sigmaverifier", "pysnark.sigma.verifier"],
 ]
 
 for mod in backends:

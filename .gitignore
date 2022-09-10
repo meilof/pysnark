@@ -41,3 +41,10 @@ pysnark_log
 pysnark_vk
 computation.zkif
 circuit.zkif
+.vscode/settings.json
+examples/secretsanta-benchmark.py
+examples/sigma_setup
+examples/sigma_proof
+examples/sigma_openings
+examples/sigma_commitments
+examples/sigma-proof
