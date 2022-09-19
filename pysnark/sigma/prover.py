@@ -9,7 +9,7 @@ group_G, group_H, group_order = setup()
 proof_file = open("sigma_proof", "w")
 
 def privval(vali):
-    ri = secrets.randbelow(group_order)
+    ri = group_order.random()
     gi = vali*group_G + ri*group_H
     print(gi, file=proof_file)
     return CommittedValue(gi, vali, ri)
@@ -36,11 +36,11 @@ def add_constraint(v, w, y):
 
     assert (v.vi*w.vi-y.vi) % group_order == 0
 
-    u1 = secrets.randbelow(group_order)
-    u2 = secrets.randbelow(group_order)
-    v1 = secrets.randbelow(group_order)
-    v2 = secrets.randbelow(group_order)
-    v3 = secrets.randbelow(group_order)
+    u1 = group_order.random()
+    u2 = group_order.random()
+    v1 = group_order.random()
+    v2 = group_order.random()
+    v3 = group_order.random()
 
     a1 = u1*group_G + v1*group_H
     a2 = u2*group_G + v2*group_H

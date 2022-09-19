@@ -1,11 +1,13 @@
 import secrets
 
-from mpyc.fingroups import EllipticCurve
+#from mpyc.fingroups import EllipticCurve
+from petlib.ec import EcGroup, EcPt
 
-group = EllipticCurve('Ed25519')
-group_G = group.generator
+group = EcGroup(713)
 
-ri = secrets.randbelow(group.order)
+group_G = group.generator()
+
+ri = group.order().random()
 group_H = ri*group_G
 
 setup_file = open("sigma_setup", "w")
