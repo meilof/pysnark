@@ -63,8 +63,8 @@ def process_snark(operation,namevals):
     elif operation=="prove": 
         prove_only_flag=True
         if prover_pk_file in namevals: prover_pk_file=namevals[prover_pk_file]
-        if prover_proof_file in namevals: prover_proof_file=namevals[proof_proof_file]
-        if prover_pubvals_file in namevals: prover_pubvals_file=namevals[proof_pubvals_file]
+        if prover_proof_file in namevals: prover_proof_file=namevals[prover_proof_file]
+        if prover_pubvals_file in namevals: prover_pubvals_file=namevals[prover_pubvals_file]
     elif operation=="verify":
         verify_only_flag=True
         if verifier_vk_file in namevals: verifier_vk_file=namevals[verifier_vk_file]
