@@ -78,7 +78,7 @@ python cube.py 3
 
 If the libsnark backend is available, it will be imported and used by default.
 This will execute a SNARK computation to compute the cube of the input value, `3`.
-As the comptation prorgresses, a constraint system of the computation is kept.
+As the comptation progresses, a constraint system of the computation is kept.
 
 By default, if available, the libsnark backend will be used. In this case, the following files will be generated:
 
