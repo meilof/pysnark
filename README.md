@@ -47,6 +47,22 @@ PySNARK is experimental and **not fit for production environment**.
 
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/meilof/pysnark/nobackend?filepath=notebooks%2Ftest.ipynb)
 
+## Running with Docker (skip if using pip installation)
+
+Dockerfile is already provided. 
+
+**Building:**
+```
+docker build -t pysnark-env .
+```
+
+**Running:**
+```
+docker run -it --rm -v "$(pwd)/examples:/app" pysnark-env python3 /app/cube.py 3
+```
+
+
+
 ## Installation
 
 ```
